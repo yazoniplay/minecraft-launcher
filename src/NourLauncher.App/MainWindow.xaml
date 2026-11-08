@@ -228,7 +228,10 @@
        </Grid>
       </DataTemplate></ListView.ItemTemplate>
      </ListView>
-     <Button Content="DELETE SELECTED INSTANCE" HorizontalAlignment="Left" Padding="14,9" Margin="0,12,0,0" Background="#49302D" Foreground="#F0D8D3" BorderThickness="0" Click="DeleteInstance_Click"/>
+     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+      <Button Content="▶  PLAY SELECTED INSTANCE" Padding="15,9" Background="#2F7A55" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="LaunchInstance_Click"/>
+      <Button Content="DELETE SELECTED INSTANCE" Padding="14,9" Margin="8,0,0,0" Background="#49302D" Foreground="#F0D8D3" BorderThickness="0" Click="DeleteInstance_Click"/>
+     </StackPanel>
     </StackPanel>
     <StackPanel x:Name="ModsPanel" Visibility="Collapsed">
      <TextBlock Text="MODRINTH MOD MANAGER" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
