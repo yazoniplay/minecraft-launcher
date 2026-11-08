@@ -1,4 +1,4 @@
-name: Nour Launcher CI
+name: Sky Client CI
 
 on:
   push:
@@ -26,6 +26,6 @@ jobs:
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: nour-launcher-win-x64
+          name: sky-client-win-x64
           path: artifacts/win-x64/
           if-no-files-found: error
