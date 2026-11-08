@@ -15,6 +15,7 @@
      <Button Content="▦   Versions" Style="{StaticResource NavButton}" Click="Versions_Click"/>
      <Button Content="◇   Instances" Style="{StaticResource NavButton}" Click="Instances_Click"/>
      <Button Content="▧   Mods" Style="{StaticResource NavButton}" Click="Mods_Click"/>
+     <Button Content="▶   Offline Game" Style="{StaticResource NavButton}" Click="OfflineGame_Click"/>
     </StackPanel>
     <StackPanel DockPanel.Dock="Bottom">
      <Button Content="♙   Profiles" Style="{StaticResource NavButton}" Click="Profiles_Click"/>
@@ -152,6 +153,25 @@
      </ItemsControl>
      <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,10,0,0">
       <TextBlock Text="Local profiles are stored on this computer. They are not Microsoft accounts and do not verify Minecraft ownership. Server access depends on each server's authentication requirements." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
+     </Border>
+    </StackPanel>
+    <StackPanel x:Name="LuantiPanel" Visibility="Collapsed">
+     <TextBlock Text="OFFLINE GAME" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
+     <TextBlock Text="Play without an account" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+     <TextBlock Text="Install and launch Luanti, a free open-source voxel sandbox, with the Minetest Game package. It runs locally and does not require a Microsoft account." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,22" TextWrapping="Wrap"/>
+     <Border Background="#1F4D75" CornerRadius="12" Padding="22" Margin="0,0,0,18">
+      <StackPanel>
+       <TextBlock Text="SKY CLIENT OFFLINE PLAY" FontSize="11" FontWeight="Bold" Foreground="#D7EAFA"/>
+       <TextBlock Text="A playable voxel sandbox." FontSize="25" FontWeight="Bold" Margin="0,7,0,5"/>
+       <TextBlock Text="Sky Client downloads the official Windows x64 Luanti build and the Minetest Game package, then launches it with your local player name. Your worlds are stored separately from Minecraft." Foreground="#D7EAFA" TextWrapping="Wrap"/>
+       <TextBlock Text="Player name" Foreground="#D7EAFA" Margin="0,18,0,6"/>
+       <TextBox x:Name="LuantiUsernameInput" Width="260" HorizontalAlignment="Left" Height="38" Padding="10,8" FontSize="14" Background="#111C28" Foreground="#F0F1E9" BorderBrush="#3C5B76" VerticalContentAlignment="Center" MaxLength="16"/>
+       <Button x:Name="InstallPlayLuantiButton" Content="INSTALL &amp; PLAY" Width="190" HorizontalAlignment="Left" Margin="0,16,0,0" Padding="16,11" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallPlayLuanti_Click"/>
+       <TextBlock x:Name="LuantiStatus" Text="Not installed yet. Installation is automatic and requires an internet connection." Foreground="#D7EAFA" Margin="0,12,0,0" TextWrapping="Wrap"/>
+      </StackPanel>
+     </Border>
+     <Border Background="#24384A" CornerRadius="10" Padding="16">
+      <TextBlock Text="Important: Luanti is not Minecraft. It is a separate open-source voxel game with its own worlds, gameplay and server network. Minecraft Java versions and Minecraft servers are not launched by this feature." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
     <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
