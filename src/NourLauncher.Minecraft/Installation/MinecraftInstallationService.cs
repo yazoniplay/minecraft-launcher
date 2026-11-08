@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -66,6 +65,7 @@ public sealed class MinecraftInstallationService
             throw new InvalidOperationException($"Minecraft {versionId} does not provide a downloadable client jar.");
 
         var tasks = new List<DownloadItem>();
+        var nativeArchives = new List<string>();
         tasks.Add(new DownloadItem(client.GetProperty("url").GetString()!,
             GetClientJarPath(versionId), GetOptionalString(client, "sha1")));
 
@@ -102,9 +102,10 @@ public sealed class MinecraftInstallationService
                     {
                         var nativePath = GetOptionalString(nativeArtifact, "path");
                         if (!string.IsNullOrWhiteSpace(nativePath))
+                            var nativeArchive = SafeCombine(Path.Combine(_root, "libraries"), nativePath);
+                            nativeArchives.Add(nativeArchive);
                             tasks.Add(new DownloadItem(nativeArtifact.GetProperty("url").GetString()!,
-                                SafeCombine(Path.Combine(_root, "libraries"), nativePath),
-                                GetOptionalString(nativeArtifact, "sha1")));
+                                nativeArchive, GetOptionalString(nativeArtifact, "sha1")));
                     }
                 }
             }
@@ -112,7 +113,6 @@ public sealed class MinecraftInstallationService
 
         var completed = 0;
         var total = tasks.Count;
-        var progressLock = new object();
         await Parallel.ForEachAsync(tasks.DistinctBy(x => x.Destination),
             new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = cancellationToken },
             async (item, token) =>
@@ -135,7 +135,7 @@ public sealed class MinecraftInstallationService
                     var destination = Path.Combine(_root, "assets", "objects", hash[..2], hash);
                     return new DownloadItem($"https://resources.download.minecraft.net/{hash[..2]}/{hash}",
                         destination, hash);
-                }).Where(x => !File.Exists(x.Destination)).ToArray();
+                }).ToArray();
 
                 var assetCompleted = 0;
                 var assetTotal = objectTasks.Length;
@@ -151,6 +151,10 @@ public sealed class MinecraftInstallationService
                 total += assetTotal;
             }
         }
+
+        var nativesDirectory = Path.Combine(_root, "versions", versionId, "natives");
+        foreach (var archive in nativeArchives.Distinct(StringComparer.OrdinalIgnoreCase))
+            ExtractNativeArchive(archive, nativesDirectory);
 
         var marker = Path.Combine(_root, "versions", versionId, "installed.json");
         await File.WriteAllTextAsync(marker, JsonSerializer.Serialize(new
@@ -214,6 +218,23 @@ public sealed class MinecraftInstallationService
         return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static void ExtractNativeArchive(string archivePath, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        var root = Path.GetFullPath(destination) + Path.DirectorySeparatorChar;
+        using var archive = ZipFile.OpenRead(archivePath);
+        foreach (var entry in archive.Entries)
+        {
+            if (string.IsNullOrEmpty(entry.Name) || entry.FullName.StartsWith("META-INF/", StringComparison.OrdinalIgnoreCase))
+                continue;
+            var output = Path.GetFullPath(Path.Combine(destination, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
+            if (!output.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("A native archive entry escaped the natives directory.");
+            Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+            entry.ExtractToFile(output, true);
+        }
+    }
+
     private static bool IsAllowed(JsonElement library)
     {
         if (!library.TryGetProperty("rules", out var rules)) return true;
@@ -224,9 +245,12 @@ public sealed class MinecraftInstallationService
             if (rule.TryGetProperty("os", out var os))
             {
                 if (os.TryGetProperty("name", out var name) && name.GetString() != "windows") matches = false;
-                if (os.TryGetProperty("arch", out var arch) &&
-                    arch.GetString() is string value &&
-                    value is not "x86" and not "x86_64" and not "amd64") matches = false;
+                if (os.TryGetProperty("arch", out var arch) && arch.GetString() is string value)
+                {
+                    var is64Bit = Environment.Is64BitOperatingSystem;
+                    if (value == "x86" && is64Bit) matches = false;
+                    if (value is "x86_64" or "amd64" && !is64Bit) matches = false;
+                }
             }
             if (matches) allowed = rule.GetProperty("action").GetString() == "allow";
         }
@@ -250,7 +274,7 @@ public sealed class MinecraftInstallationService
             ? value.GetString() : null;
 
     private sealed record ManifestEntry(string Url, string? Sha1);
-    private sealed record DownloadItem(string Url, string Destination, string? Sha1, bool IsAssetIndex = false);
+    private sealed record DownloadItem(string Url, string Destination, string? Sha1);
 }
 
 public sealed record InstalledVersionInfo(
