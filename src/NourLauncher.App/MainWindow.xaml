@@ -224,7 +224,7 @@
      <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="18" Margin="0,0,0,16">
       <StackPanel>
        <TextBlock Text="TARGET INSTANCE" FontWeight="Bold" Foreground="#8BC4FF" FontSize="11" Margin="0,0,0,8"/>
-       <ComboBox x:Name="ModInstanceSelector" Height="36" DisplayMemberPath="Name"/>
+       <ComboBox x:Name="ModInstanceSelector" Height="36" DisplayMemberPath="Name" SelectionChanged="ModInstanceSelector_SelectionChanged"/>
        <DockPanel Margin="0,12,0,0">
         <ComboBox x:Name="ModLoaderSelector" Width="140" SelectedIndex="0" Padding="8" DockPanel.Dock="Right">
          <ComboBoxItem Content="Fabric" Tag="fabric"/>
