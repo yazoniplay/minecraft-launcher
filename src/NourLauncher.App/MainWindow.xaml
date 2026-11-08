@@ -47,6 +47,74 @@
       </Border>
      </UniformGrid>
     </StackPanel>
+    <StackPanel x:Name="VersionsPanel" Visibility="Collapsed">
+     <TextBlock Text="MINECRAFT LIBRARY" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
+     <TextBlock Text="Versions" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+     <TextBlock Text="Browse official Minecraft releases and snapshots. Install a version to cache its game files on this PC." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,22" TextWrapping="Wrap"/>
+     <DockPanel Margin="0,0,0,14">
+      <Button Content="↻  REFRESH" DockPanel.Dock="Right" Padding="14,9" Margin="10,0,0,0" Background="#24384A" Foreground="#EAF4FF" BorderBrush="#36516A" Click="RefreshVersions_Click"/>
+      <ComboBox x:Name="VersionTypeFilter" Width="150" SelectedIndex="0" Margin="0,0,10,0" Padding="8,7" SelectionChanged="VersionTypeFilter_SelectionChanged">
+       <ComboBoxItem Content="All versions" Tag="all"/>
+       <ComboBoxItem Content="Releases" Tag="release"/>
+       <ComboBoxItem Content="Snapshots" Tag="snapshot"/>
+       <ComboBoxItem Content="Old beta" Tag="old_beta"/>
+       <ComboBoxItem Content="Old alpha" Tag="old_alpha"/>
+      </ComboBox>
+      <TextBox x:Name="VersionSearchInput" Height="36" Padding="11,8" FontSize="14" Background="#1F2D3B" Foreground="#F2F7FC" BorderBrush="#36516A" VerticalContentAlignment="Center" ToolTip="Search versions, e.g. 1.20.1" TextChanged="VersionSearchInput_TextChanged"/>
+     </DockPanel>
+     <Border Background="{StaticResource SkySurface}" BorderBrush="#36516A" BorderThickness="1" CornerRadius="10" Padding="10">
+      <ListView x:Name="VersionList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource SkyText}" SelectionMode="Single" MinHeight="330">
+       <ListView.ItemContainerStyle>
+        <Style TargetType="ListViewItem">
+         <Setter Property="Padding" Value="10,12"/>
+         <Setter Property="Margin" Value="0,2"/>
+         <Setter Property="Background" Value="#172738"/>
+         <Setter Property="BorderBrush" Value="#2D455C"/>
+         <Setter Property="BorderThickness" Value="1"/>
+         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+         <Setter Property="Template">
+          <Setter.Value>
+           <ControlTemplate TargetType="ListViewItem">
+            <Border x:Name="RowBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" Padding="{TemplateBinding Padding}">
+             <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+             <Trigger Property="IsSelected" Value="True"><Setter TargetName="RowBorder" Property="Background" Value="#244D70"/><Setter TargetName="RowBorder" Property="BorderBrush" Value="#3D8EDB"/></Trigger>
+             <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="RowBorder" Property="BorderBrush" Value="#5A9ED8"/></Trigger>
+            </ControlTemplate.Triggers>
+           </ControlTemplate>
+          </Setter.Value>
+         </Setter>
+        </Style>
+       </ListView.ItemContainerStyle>
+       <ListView.ItemTemplate>
+        <DataTemplate>
+         <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.2*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <TextBlock Text="{Binding Id}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="14"/>
+          <TextBlock Grid.Column="1" Text="{Binding TypeLabel}" Foreground="{StaticResource SkyMuted}" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="2" Text="{Binding ReleaseDateLabel}" Foreground="{StaticResource SkyMuted}" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="3" Text="{Binding StatusLabel}" Foreground="#8BC4FF" FontWeight="Bold" VerticalAlignment="Center" Margin="12,0,0,0"/>
+         </Grid>
+        </DataTemplate>
+       </ListView.ItemTemplate>
+      </ListView>
+     </Border>
+     <TextBlock x:Name="VersionsMessage" Text="Connect to the internet to load Mojang's official version list." Foreground="{StaticResource SkyMuted}" Margin="2,12,0,12" TextWrapping="Wrap"/>
+     <Border Background="#1F2D3B" BorderBrush="#36516A" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,4,0,0">
+      <StackPanel>
+       <DockPanel>
+        <StackPanel>
+         <TextBlock Text="INSTALL SELECTED VERSION" FontSize="11" FontWeight="Bold" Foreground="#8BC4FF"/>
+         <TextBlock x:Name="SelectedVersionLabel" Text="Select a version above" FontSize="18" FontWeight="Bold" Margin="0,5,0,0"/>
+        </StackPanel>
+        <Button x:Name="InstallVersionButton" Content="INSTALL VERSION" DockPanel.Dock="Right" Padding="17,10" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallVersion_Click" IsEnabled="False"/>
+       </DockPanel>
+       <ProgressBar x:Name="VersionInstallProgress" Height="7" Margin="0,16,0,8" Minimum="0" Maximum="100" Visibility="Collapsed"/>
+       <TextBlock x:Name="VersionInstallMessage" Foreground="{StaticResource SkyMuted}" TextWrapping="Wrap"/>
+      </StackPanel>
+     </Border>
+    </StackPanel>
     <StackPanel x:Name="ProfilesPanel" Visibility="Collapsed">
      <TextBlock Text="ACCOUNT MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
      <TextBlock Text="Profiles" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -89,7 +157,7 @@
     <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
      <TextBlock Text="RUNTIME MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
      <TextBlock Text="Java runtimes" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
-     <TextBlock Text="Nour can keep Java versions separate from the Java installed on Windows." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
+     <TextBlock Text="Sky Client can keep Java versions separate from the Java installed on Windows." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
      <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="22">
       <StackPanel>
        <DockPanel>
