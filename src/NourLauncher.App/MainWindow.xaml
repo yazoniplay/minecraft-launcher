@@ -111,7 +111,7 @@
         </StackPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
          <Button x:Name="InstallVersionButton" Content="INSTALL VERSION" Padding="17,10" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallVersion_Click" IsEnabled="False"/>
-         <Button x:Name="PlayOfflineButton" Content="▶  PLAY OFFLINE" Padding="17,10" Margin="10,0,0,0" Background="#2F7A55" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="PlayOffline_Click" IsEnabled="False" ToolTip="Launch this version with your offline profile. Enable offline mode under Settings first."/>
+         <Button x:Name="PlayOfflineButton" Content="▶  PLAY MINECRAFT" Padding="17,10" Margin="10,0,0,0" Background="#2F7A55" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="PlayMinecraft_Click" IsEnabled="False" ToolTip="Launch this version with your offline profile. Enable offline mode under Settings first."/>
         </StackPanel>
        </DockPanel>
        <ProgressBar x:Name="VersionInstallProgress" Height="7" Margin="0,16,0,8" Minimum="0" Maximum="100" Visibility="Collapsed"/>
@@ -132,6 +132,19 @@
         <Button Content="ADD PROFILE" Margin="12,0,0,0" Padding="18,8" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="AddProfile_Click"/>
        </DockPanel>
        <TextBlock x:Name="ProfileMessage" Foreground="#D9B879" Margin="0,10,0,0" TextWrapping="Wrap"/>
+      </StackPanel>
+     </Border>
+     <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="20" Margin="0,0,0,18">
+      <StackPanel>
+       <TextBlock Text="AUTHENTICATED ACCOUNTS" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,0,0,12"/>
+       <Button Content="SIGN IN WITH MICROSOFT" HorizontalAlignment="Left" Padding="16,9" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="SignInMicrosoft_Click"/>
+       <TextBlock Text="Microsoft device-code sign-in. The app ID is configured under Settings." Foreground="{StaticResource SkyMuted}" FontSize="12" Margin="0,8,0,16" TextWrapping="Wrap"/>
+       <TextBlock Text="ELY.BY USERNAME OR EMAIL" Foreground="{StaticResource SkyMuted}" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+       <TextBox x:Name="ElyUsernameInput" Height="36" Padding="10,8" Background="#111C28" Foreground="#F0F1E9" BorderBrush="#3C5B76"/>
+       <TextBlock Text="ELY.BY PASSWORD" Foreground="{StaticResource SkyMuted}" FontSize="11" FontWeight="Bold" Margin="0,10,0,6"/>
+       <PasswordBox x:Name="ElyPasswordInput" Height="36" Padding="10,8" Background="#111C28" Foreground="#F0F1E9" BorderBrush="#3C5B76"/>
+       <Button Content="SIGN IN WITH ELY.BY" HorizontalAlignment="Left" Padding="16,9" Margin="0,12,0,0" Background="#2F7A55" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="SignInElyBy_Click"/>
+       <TextBlock x:Name="AuthenticationMessage" Foreground="{StaticResource SkyMuted}" Margin="0,12,0,0" TextWrapping="Wrap"/>
       </StackPanel>
      </Border>
      <TextBlock Text="SAVED PROFILES" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SkyMuted}" Margin="0,0,0,12"/>
@@ -171,6 +184,11 @@
      <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,18,0,0">
       <TextBlock Text="Runtime selection is version-specific: older Minecraft releases may need Java 8 or 16, while modern releases declare their required Java major in Mojang metadata. Sky Client does not use or modify your system Java installation." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
+     <TextBlock Text="MICROSOFT AUTHENTICATION" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,30,0,12"/>
+     <TextBlock Text="Public-client application ID" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+     <TextBox x:Name="MicrosoftClientIdInput" Height="36" Padding="10,8" Background="#111C28" Foreground="#F0F1E9" BorderBrush="#3C5B76"/>
+     <Button Content="SAVE MICROSOFT APP ID" HorizontalAlignment="Left" Padding="14,8" Margin="0,10,0,0" Click="SaveMicrosoftClientId_Click"/>
+     <TextBlock Text="Sky Client needs its own Microsoft public-client app registration. No client secret is embedded. Add a desktop/public-client registration and paste its application ID here." Foreground="{StaticResource SkyMuted}" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"/>
      <TextBlock Text="ACCOUNT &amp; LAUNCH" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,30,0,12"/>
      <TextBlock Text="Offline mode" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
      <TextBlock Text="Offline mode lets an installed Minecraft version start without signing in. The game uses a locally generated player identity, so world saves, inventory and LAN games stay tied to the same name." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,20" TextWrapping="Wrap"/>
