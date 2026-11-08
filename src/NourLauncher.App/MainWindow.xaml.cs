@@ -446,6 +446,150 @@ public partial class MainWindow : Window
         RefreshLaunchState();
     }
 
+    private async void CreateInstance_Click(object sender, RoutedEventArgs e)
+    {
+        if (InstanceVersionSelector.SelectedItem is not VersionListItem version)
+        {
+            InstanceMessage.Text = "Select a Minecraft version first.";
+            return;
+        }
+        var name = InstanceNameInput.Text.Trim();
+        var loader = (InstanceLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "vanilla";
+        try
+        {
+            var instance = await _instanceManager.CreateAsync(name, version.Id, loader);
+            InstanceNameInput.Clear();
+            InstanceMessage.Text = $"Created {instance.Name} for Minecraft {instance.MinecraftVersion} ({instance.Loader}).";
+            RefreshInstances();
+        }
+        catch (Exception ex) { InstanceMessage.Text = "Could not create instance: " + ex.Message; }
+    }
+
+    private void RefreshInstances()
+    {
+        _instances.Clear();
+        foreach (var instance in _instanceManager.GetInstances())
+            _instances.Add(new InstanceListItem(instance));
+    }
+
+    private void DeleteInstance_Click(object sender, RoutedEventArgs e)
+    {
+        if (InstancesList.SelectedItem is not InstanceListItem selected) return;
+        var answer = MessageBox.Show(this, $"Delete instance '{selected.Name}' and all of its saves, mods and settings?",
+            "Delete instance", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+        if (answer != MessageBoxResult.Yes) return;
+        try
+        {
+            _instanceManager.Delete(selected.Name);
+            InstanceMessage.Text = $"Deleted instance '{selected.Name}'.";
+            RefreshInstances();
+            RefreshInstalledMods();
+        }
+        catch (Exception ex) { InstanceMessage.Text = "Could not delete instance: " + ex.Message; }
+    }
+
+    private async void SearchMods_Click(object sender, RoutedEventArgs e)
+    {
+        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance)
+        {
+            ModManagerMessage.Text = "Create or select an instance first.";
+            return;
+        }
+        var query = ModSearchInput.Text.Trim();
+        if (query.Length == 0) { ModManagerMessage.Text = "Enter a mod name to search."; return; }
+        var loader = (ModLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "fabric";
+        try
+        {
+            ModManagerMessage.Text = $"Searching Modrinth for {query} ({instance.MinecraftVersion}, {loader})…";
+            _modSearchResults.Clear();
+            var results = await _modrinthService.SearchModsAsync(query, instance.MinecraftVersion, loader);
+            foreach (var result in results) _modSearchResults.Add(new ModSearchResultItem(result));
+            ModManagerMessage.Text = $"Found {_modSearchResults.Count} compatible Modrinth projects.";
+        }
+        catch (Exception ex) { ModManagerMessage.Text = "Mod search failed: " + ex.Message; }
+    }
+
+    private async void InstallMod_Click(object sender, RoutedEventArgs e)
+    {
+        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance ||
+            ModSearchResults.SelectedItem is not ModSearchResultItem selected)
+        {
+            ModManagerMessage.Text = "Select an instance and a mod from the search results.";
+            return;
+        }
+        var loader = (ModLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "fabric";
+        try
+        {
+            ModManagerMessage.Text = $"Finding a compatible {selected.Title} release…";
+            var versions = await _modrinthService.GetCompatibleVersionsAsync(selected.Project.Id, instance.MinecraftVersion, loader);
+            var chosen = versions.FirstOrDefault(v => v.VersionType == "release") ?? versions.FirstOrDefault();
+            if (chosen is null) { ModManagerMessage.Text = "No compatible release was found for this version and loader."; return; }
+            var progress = new Progress<double>(value => ModManagerMessage.Text = $"Downloading {selected.Title}: {value:P0}");
+            var installedPath = await _modrinthService.InstallVersionAsync(chosen, instance.Name, progress);
+            ModManagerMessage.Text = $"Installed {Path.GetFileName(installedPath)} into {instance.Name}.";
+            RefreshInstalledMods();
+        }
+        catch (Exception ex) { ModManagerMessage.Text = "Mod installation failed: " + ex.Message; }
+    }
+
+    private void ModInstanceSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshInstalledMods();
+
+    private void RefreshInstalledMods()
+    {
+        _installedMods.Clear();
+        if (ModInstanceSelector?.SelectedItem is not InstanceListItem instance) return;
+        foreach (var path in _modrinthService.GetInstalledMods(instance.Name))
+            _installedMods.Add(new InstalledModItem(Path.GetFileName(path)));
+    }
+
+    private void ToggleMod_Click(object sender, RoutedEventArgs e)
+    {
+        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance ||
+            InstalledModsList.SelectedItem is not InstalledModItem mod) return;
+        try
+        {
+            _modrinthService.SetModEnabled(instance.Name, mod.FileName, !mod.IsEnabled);
+            RefreshInstalledMods();
+            ModManagerMessage.Text = $"{mod.FileName} {(mod.IsEnabled ? "disabled" : "enabled")}.";
+        }
+        catch (Exception ex) { ModManagerMessage.Text = "Could not change mod state: " + ex.Message; }
+    }
+
+    private void RemoveMod_Click(object sender, RoutedEventArgs e)
+    {
+        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance ||
+            InstalledModsList.SelectedItem is not InstalledModItem mod) return;
+        try
+        {
+            _modrinthService.RemoveMod(instance.Name, mod.FileName);
+            RefreshInstalledMods();
+            ModManagerMessage.Text = $"Removed {mod.FileName}.";
+        }
+        catch (Exception ex) { ModManagerMessage.Text = "Could not remove mod: " + ex.Message; }
+    }
+
+    private void ScanDiagnostics_Click(object sender, RoutedEventArgs e) => ScanDiagnostics();
+
+    private void ScanDiagnostics()
+    {
+        try
+        {
+            _crashReports.Clear();
+            foreach (var report in _crashDiagnostics.GetRecentReports()) _crashReports.Add(report);
+            DiagnosticsMessage.Text = _crashReports.Count == 0
+                ? "No Minecraft logs or crash reports were found in managed instances."
+                : $"Found {_crashReports.Count} recent log and crash files. Select one to inspect it.";
+        }
+        catch (Exception ex) { DiagnosticsMessage.Text = "Diagnostic scan failed: " + ex.Message; }
+    }
+
+    private void CrashReportsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CrashReportsList.SelectedItem is not CrashReport report) return;
+        try { CrashDiagnosticText.Text = _crashDiagnostics.BuildDiagnosticReport(report.FilePath); }
+        catch (Exception ex) { CrashDiagnosticText.Text = "Could not read this report: " + ex.Message; }
+    }
+
     private async void OfflineMode_Changed(object sender, RoutedEventArgs e)
     {
         if (_suppressSettingsEvents) return;
@@ -521,6 +665,31 @@ public partial class MainWindow : Window
         public MinecraftInstance Instance { get; }
         public string Name => Instance.Name;
         public string MinecraftVersion => Instance.MinecraftVersion;
+        public string Details => $"Minecraft {Instance.MinecraftVersion} · {Instance.Loader} · created {Instance.CreatedAt.ToLocalTime():yyyy-MM-dd}";
+    }
+
+    private sealed class ModSearchResultItem
+    {
+        public ModSearchResultItem(ModrinthProject project) => Project = project;
+        public ModrinthProject Project { get; }
+        public string Title => Project.Title;
+        public string Description => Project.Description;
+        public string DownloadsLabel => $"{Project.Downloads:N0} downloads · by {Project.Author}";
+    }
+
+    private sealed class InstalledModItem
+    {
+        public InstalledModItem(string fileName) => FileName = fileName;
+        public string FileName { get; }
+        public bool IsEnabled => FileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
+        public string DisplayName => (IsEnabled ? "✓  " : "Ⅱ  ") + FileName;
+    }
+
+    private sealed class InstanceListItem
+    {
+        public InstanceListItem(MinecraftInstance instance) => Instance = instance;
+        public MinecraftInstance Instance { get; }
+        public string Name => Instance.Name;
         public string Details => $"Minecraft {Instance.MinecraftVersion} · {Instance.Loader} · created {Instance.CreatedAt.ToLocalTime():yyyy-MM-dd}";
     }
 
