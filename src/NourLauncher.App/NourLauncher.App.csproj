@@ -11,5 +11,6 @@
     <ProjectReference Include="../NourLauncher.Core/NourLauncher.Core.csproj" />
     <ProjectReference Include="../NourLauncher.Minecraft/NourLauncher.Minecraft.csproj" />
     <ProjectReference Include="../NourLauncher.Runtimes/NourLauncher.Runtimes.csproj" />
+    <ProjectReference Include="../NourLauncher.Storage/NourLauncher.Storage.csproj" />
   </ItemGroup>
 </Project>
