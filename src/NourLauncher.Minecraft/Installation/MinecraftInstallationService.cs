@@ -170,6 +170,37 @@ public sealed class MinecraftInstallationService
         progress?.Report(new InstallationProgress($"Minecraft {versionId} is installed.", total, total));
     }
 
+    public async Task<int> GetJavaMajorVersionAsync(string versionId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(versionId) || versionId is "." or ".." ||
+            versionId.Any(ch => !char.IsAsciiLetterOrDigit(ch) && ch is not '_' and not '-' and not '.'))
+            throw new ArgumentException("Invalid Minecraft version ID.", nameof(versionId));
+
+        var metadataPath = GetVersionJsonPath(versionId);
+        if (!File.Exists(metadataPath))
+        {
+            var manifest = await GetVersionEntryAsync(versionId, cancellationToken);
+            Directory.CreateDirectory(Path.GetDirectoryName(metadataPath)!);
+            await DownloadVerifiedAsync(new Uri(manifest.Url), metadataPath, manifest.Sha1, cancellationToken);
+        }
+
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(metadataPath, cancellationToken));
+        if (document.RootElement.TryGetProperty("javaVersion", out var javaVersion) &&
+            javaVersion.TryGetProperty("majorVersion", out var major) && major.TryGetInt32(out var requiredMajor))
+            return requiredMajor;
+
+        // Mojang added javaVersion metadata in the modern version format.
+        // Legacy versions before 1.17 use Java 8; 1.17 uses Java 16; 1.18+ defaults to Java 17.
+        var parts = versionId.Split('.');
+        if (parts.Length >= 2 && int.TryParse(parts[1], out var minor))
+        {
+            if (minor <= 16) return 8;
+            if (minor == 17) return 16;
+            return 17;
+        }
+        return 8;
+    }
+
     public bool IsInstalled(string versionId) =>
         File.Exists(GetVersionJsonPath(versionId)) &&
         File.Exists(GetClientJarPath(versionId)) &&
