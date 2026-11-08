@@ -31,7 +31,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             await RefreshProfilesAsync();
-            RefreshJava25Status();
+            RefreshManagedJavaStatus();
         };
     }
 
@@ -206,11 +206,19 @@ public partial class MainWindow : Window
         try
         {
             await _installationService.InstallAsync(selected.Id, progress);
+            var javaMajor = await _installationService.GetJavaMajorVersionAsync(selected.Id);
+            VersionInstallMessage.Text = $"Minecraft files installed. Preparing private Java {javaMajor}…";
+            var runtimeProgress = new Progress<double>(value =>
+            {
+                VersionInstallProgress.Value = 50 + Math.Clamp(value * 50, 0, 50);
+                VersionInstallMessage.Text = $"Installing private Java {javaMajor}…";
+            });
+            var javaPath = await _javaRuntimeManager.EnsureRuntimeAsync(javaMajor, runtimeProgress);
             selected.IsInstalled = true;
             ApplyVersionFilters();
             VersionList.SelectedItem = _visibleVersions.FirstOrDefault(v => v.Id == selected.Id);
             VersionInstallProgress.Value = 100;
-            VersionInstallMessage.Text = $"Minecraft {selected.Id} is installed. Game files are cached; launching is the next milestone.";
+            VersionInstallMessage.Text = $"Minecraft {selected.Id} and Java {javaMajor} are ready. Launch integration is the next milestone.";
         }
         catch (Exception ex)
         {
@@ -225,39 +233,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RefreshJava25Status()
+    private void RefreshManagedJavaStatus()
     {
-        var installed = _javaRuntimeManager.IsJava25Installed;
-        Java25Status.Text = installed
-            ? "Installed · " + _javaRuntimeManager.JavaExecutablePath
-            : "Not installed";
-        InstallJava25Button.Content = installed ? "REINSTALL JAVA 25" : "INSTALL JAVA 25";
-    }
-
-    private async void InstallJava25_Click(object sender, RoutedEventArgs e)
-    {
-        InstallJava25Button.IsEnabled = false;
-        Java25Progress.Visibility = Visibility.Visible;
-        Java25Progress.Value = 0;
-        Java25Message.Text = "Downloading Eclipse Temurin 25…";
-
-        var progress = new Progress<double>(value =>
-            Java25Progress.Value = Math.Clamp(value * 100, 0, 100));
-
-        try
-        {
-            await _javaRuntimeManager.InstallJava25Async(progress);
-            Java25Message.Text = "Java 25 installed successfully. It is now managed by Sky Client.";
-            RefreshJava25Status();
-        }
-        catch (Exception ex)
-        {
-            Java25Message.Text = "Java 25 installation failed: " + ex.Message;
-        }
-        finally
-        {
-            InstallJava25Button.IsEnabled = true;
-        }
+        var installed = _javaRuntimeManager.GetInstalledMajors();
+        ManagedJavaStatus.Text = installed.Count == 0
+            ? "No managed Java runtimes installed yet. Sky Client installs the correct one when you install a Minecraft version."
+            : "Installed runtimes: " + string.Join(", ", installed.Select(v => $"Java {v}")) +
+              Environment.NewLine + string.Join(Environment.NewLine, installed.Select(v => $"Java {v}: {_javaRuntimeManager.GetJavaExecutablePath(v)}"));
     }
 
     private sealed class VersionListItem : INotifyPropertyChanged
