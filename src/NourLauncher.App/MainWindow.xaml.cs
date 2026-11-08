@@ -166,7 +166,15 @@ public partial class MainWindow : Window
     private void Home_Click(object sender, RoutedEventArgs e) => ShowSection("Home");
     private void Profiles_Click(object sender, RoutedEventArgs e) => ShowSection("Profiles");
     private async void Versions_Click(object sender, RoutedEventArgs e) { ShowSection("Versions"); if (!_versionsLoaded) await LoadVersionsAsync(); }
-    private void Instances_Click(object sender, RoutedEventArgs e) { ShowSection("Instances"); RefreshInstances(); if (_allVersions.Count == 0) _ = LoadVersionsAsync(); InstanceVersionSelector.ItemsSource = _allVersions; }
+    private async void Instances_Click(object sender, RoutedEventArgs e)
+    {
+        ShowSection("Instances");
+        RefreshInstances();
+        if (_allVersions.Count == 0) await LoadVersionsAsync();
+        InstanceVersionSelector.ItemsSource = _allVersions;
+        if (InstanceVersionSelector.SelectedItem is null)
+            InstanceVersionSelector.SelectedItem = _allVersions.FirstOrDefault(v => v.Type == "release");
+    }
     private void Mods_Click(object sender, RoutedEventArgs e) { ShowSection("Mods"); RefreshInstances(); if (ModInstanceSelector.SelectedItem is null && _instances.Count > 0) ModInstanceSelector.SelectedIndex = 0; RefreshInstalledMods(); }
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("Settings");
     private void Diagnostics_Click(object sender, RoutedEventArgs e) { ShowSection("Diagnostics"); ScanDiagnostics(); }
