@@ -185,6 +185,10 @@ public sealed class MinecraftInstallationService
         }
 
         using var document = JsonDocument.Parse(await File.ReadAllTextAsync(metadataPath, cancellationToken));
+        if (document.RootElement.TryGetProperty("inheritsFrom", out var inherited) &&
+            inherited.GetString() is string parentVersion && !string.IsNullOrWhiteSpace(parentVersion))
+            return await GetJavaMajorVersionAsync(parentVersion, cancellationToken);
+
         if (document.RootElement.TryGetProperty("javaVersion", out var javaVersion) &&
             javaVersion.TryGetProperty("majorVersion", out var major) && major.TryGetInt32(out var requiredMajor))
             return requiredMajor;
