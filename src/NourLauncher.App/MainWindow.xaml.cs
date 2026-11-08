@@ -32,7 +32,6 @@ public partial class MainWindow : Window
     private readonly InstanceManager _instanceManager = new();
     private readonly CrashDiagnosticsService _crashDiagnostics = new();
     private readonly MicrosoftMinecraftAuthService _microsoftAuth = new();
-    private readonly ElyByAuthenticationService _elyByAuth = new();
     private readonly Dictionary<Guid, MinecraftLaunchSession> _authenticatedSessions = new();
     private readonly ObservableCollection<InstanceListItem> _instances = new();
     private readonly ObservableCollection<ModSearchResultItem> _modSearchResults = new();
@@ -408,22 +407,6 @@ public partial class MainWindow : Window
         RefreshLaunchState();
     }
 
-    private async void SignInElyBy_Click(object sender, RoutedEventArgs e)
-    {
-        var username = ElyUsernameInput.Text.Trim();
-        var password = ElyPasswordInput.Password;
-        try
-        {
-            AuthenticationMessage.Text = "Signing in to Ely.by and verifying its account session…";
-            var session = await _elyByAuth.AuthenticateAsync(username, password);
-            await AddAuthenticatedProfileAsync(session, LauncherAccountType.ElyBy);
-            AuthenticationMessage.Text = $"Signed in to Ely.by as {session.Username}.";
-        }
-        catch (Exception ex) { AuthenticationMessage.Text = "Ely.by sign-in failed: " + ex.Message; }
-        finally { ElyPasswordInput.Clear(); }
-        RefreshLaunchState();
-    }
-
     private async Task AddAuthenticatedProfileAsync(
         MinecraftLaunchSession session, LauncherAccountType accountType)
     {
@@ -783,7 +766,6 @@ public partial class MainWindow : Window
         {
             LauncherAccountType.Offline => "OFFLINE ACCOUNT",
             LauncherAccountType.Microsoft => "MICROSOFT ACCOUNT",
-            LauncherAccountType.ElyBy => "ELY.BY ACCOUNT",
             _ => "UNKNOWN ACCOUNT"
         };
 
