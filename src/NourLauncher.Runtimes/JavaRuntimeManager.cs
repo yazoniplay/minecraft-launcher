@@ -4,7 +4,7 @@ using System.Net.Http;
 namespace NourLauncher.Runtimes;
 
 /// <summary>
-/// Installs a private Eclipse Temurin Java 25 JRE for Nour Launcher.
+/// Installs a private Eclipse Temurin Java 25 JRE for Sky Client.
 /// This runtime is optional; Minecraft versions must use a compatible Java major version.
 /// </summary>
 public sealed class JavaRuntimeManager
@@ -16,7 +16,7 @@ public sealed class JavaRuntimeManager
     {
         var appData = rootDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "NourLauncher");
+            "SkyClient");
         _runtimeRoot = Path.Combine(appData, "runtimes", "temurin-25");
     }
 
@@ -31,7 +31,7 @@ public sealed class JavaRuntimeManager
         if (IsJava25Installed) return;
 
         Directory.CreateDirectory(Path.GetDirectoryName(_runtimeRoot)!);
-        var archivePath = Path.Combine(Path.GetTempPath(), $"nour-temurin25-{Guid.NewGuid():N}.zip");
+        var archivePath = Path.Combine(Path.GetTempPath(), $"skyclient-temurin25-{Guid.NewGuid():N}.zip");
         var stagingPath = _runtimeRoot + ".installing-" + Guid.NewGuid().ToString("N");
 
         try
@@ -39,7 +39,7 @@ public sealed class JavaRuntimeManager
             using var request = new HttpRequestMessage(
                 HttpMethod.Get,
                 "https://api.adoptium.net/v3/binary/latest/25/ga/windows/x64/jre/hotspot/normal/eclipse");
-            request.Headers.UserAgent.ParseAdd("NourLauncher/0.1");
+            request.Headers.UserAgent.ParseAdd("SkyClient/0.1");
 
             using var response = await Http.SendAsync(
                 request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
