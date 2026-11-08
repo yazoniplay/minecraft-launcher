@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -130,7 +131,7 @@ public sealed class LuantiManager
         start.ArgumentList.Add("--config");
         start.ArgumentList.Add(ConfigPath);
         start.Environment["MINETEST_USER_PATH"] = UserRoot;
-        Process.Start(start) ?? throw new InvalidOperationException("Windows could not start Luanti.");
+        _ = Process.Start(start) ?? throw new InvalidOperationException("Windows could not start Luanti.");
     }
 
     private async Task WriteConfigAsync(string username, CancellationToken cancellationToken)
