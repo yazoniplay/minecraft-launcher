@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using NourLauncher.Core.Models;
 using NourLauncher.Storage;
+using NourLauncher.Runtimes;
 
 namespace NourLauncher.App;
 
@@ -13,13 +14,18 @@ public partial class MainWindow : Window
 {
     private static readonly Regex ValidUsername = new("^[A-Za-z0-9_]{3,16}$", RegexOptions.Compiled);
     private readonly LauncherProfileStore _profileStore = new();
+    private readonly JavaRuntimeManager _javaRuntimeManager = new();
     private readonly ObservableCollection<ProfileListItem> _profiles = new();
 
     public MainWindow()
     {
         InitializeComponent();
         ProfilesList.ItemsSource = _profiles;
-        Loaded += async (_, _) => await RefreshProfilesAsync();
+        Loaded += async (_, _) =>
+        {
+            await RefreshProfilesAsync();
+            RefreshJava25Status();
+        };
     }
 
     private async Task RefreshProfilesAsync()
@@ -104,7 +110,8 @@ public partial class MainWindow : Window
     {
         HomePanel.Visibility = section == "Home" ? Visibility.Visible : Visibility.Collapsed;
         ProfilesPanel.Visibility = section == "Profiles" ? Visibility.Visible : Visibility.Collapsed;
-        PlaceholderPanel.Visibility = section is "Home" or "Profiles" ? Visibility.Collapsed : Visibility.Visible;
+        SettingsPanel.Visibility = section == "Settings" ? Visibility.Visible : Visibility.Collapsed;
+        PlaceholderPanel.Visibility = section is "Home" or "Profiles" or "Settings" ? Visibility.Collapsed : Visibility.Visible;
         PlaceholderTitle.Text = section;
     }
 
@@ -114,6 +121,41 @@ public partial class MainWindow : Window
     private void Instances_Click(object sender, RoutedEventArgs e) => ShowSection("Instances");
     private void Mods_Click(object sender, RoutedEventArgs e) => ShowSection("Mods");
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("Settings");
+
+    private void RefreshJava25Status()
+    {
+        var installed = _javaRuntimeManager.IsJava25Installed;
+        Java25Status.Text = installed
+            ? "Installed · " + _javaRuntimeManager.JavaExecutablePath
+            : "Not installed";
+        InstallJava25Button.Content = installed ? "REINSTALL JAVA 25" : "INSTALL JAVA 25";
+    }
+
+    private async void InstallJava25_Click(object sender, RoutedEventArgs e)
+    {
+        InstallJava25Button.IsEnabled = false;
+        Java25Progress.Visibility = Visibility.Visible;
+        Java25Progress.Value = 0;
+        Java25Message.Text = "Downloading Eclipse Temurin 25…";
+
+        var progress = new Progress<double>(value =>
+            Java25Progress.Value = Math.Clamp(value * 100, 0, 100));
+
+        try
+        {
+            await _javaRuntimeManager.InstallJava25Async(progress);
+            Java25Message.Text = "Java 25 installed successfully. It is now managed by Nour Launcher.";
+            RefreshJava25Status();
+        }
+        catch (Exception ex)
+        {
+            Java25Message.Text = "Java 25 installation failed: " + ex.Message;
+        }
+        finally
+        {
+            InstallJava25Button.IsEnabled = true;
+        }
+    }
 
     private sealed class ProfileListItem : INotifyPropertyChanged
     {
