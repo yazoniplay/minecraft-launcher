@@ -16,8 +16,7 @@ public sealed record MinecraftLaunchSession(
     string UserType = "msa",
     string ClientId = "",
     string Xuid = "",
-    bool IsOffline = false,
-    string? AuthlibInjectorPath = null)
+    bool IsOffline = false)
 {
     /// <summary>
     /// Builds the offline session the vanilla client accepts in singleplayer/LAN:
@@ -61,8 +60,6 @@ public sealed record MinecraftLaunchSession(
             AccessToken.Equals("0", StringComparison.OrdinalIgnoreCase) ||
             AccessToken.Contains("placeholder", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("A valid Minecraft access token is required for online play.");
-        if (AuthlibInjectorPath is not null && !File.Exists(AuthlibInjectorPath))
-            throw new FileNotFoundException("The configured authentication provider library is missing.", AuthlibInjectorPath);
     }
 }
 
@@ -125,9 +122,6 @@ public sealed class MinecraftLaunchService
         var jvmArguments = ReadArgumentList(metadata, "jvm", "minecraftArguments", variables, legacy: false);
         var gameArguments = ReadArgumentList(metadata, "game", "minecraftArguments", variables, legacy: true);
 
-        if (!string.IsNullOrWhiteSpace(session.AuthlibInjectorPath))
-            jvmArguments.Insert(0, $"-javaagent:{session.AuthlibInjectorPath}=https://authserver.ely.by/");
-
         if (!jvmArguments.Any(a => a.Equals("-cp", StringComparison.OrdinalIgnoreCase) ||
                                    a.Equals("-classpath", StringComparison.OrdinalIgnoreCase)))
         {
@@ -177,8 +171,6 @@ public sealed class MinecraftLaunchService
         var variables = BuildVariables(request, session, gameDirectory,
             Path.Combine(_root, "assets"), assetIndex, nativesDirectory, classpath);
         var args = ReadArgumentList(metadata, "jvm", "minecraftArguments", variables, legacy: false);
-        if (!string.IsNullOrWhiteSpace(session.AuthlibInjectorPath))
-            args.Insert(0, $"-javaagent:{session.AuthlibInjectorPath}=https://authserver.ely.by/");
         if (!args.Any(a => a is "-cp" or "-classpath"))
         {
             args.Add("-cp");
