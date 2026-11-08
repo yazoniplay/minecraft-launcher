@@ -1,4 +1,4 @@
-# Nour Launcher
+# Sky Client
 
 A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 
@@ -13,7 +13,7 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 ## Requirements
 - Windows 10/11 x64 for the initial release.
 - .NET 10 SDK to build from source.
-- No separately installed Java is required to run Nour Launcher.
+- No separately installed Java is required to run Sky Client.
 
 ## Repository layout
 - src/NourLauncher.App: WPF desktop application and MVVM UI.
