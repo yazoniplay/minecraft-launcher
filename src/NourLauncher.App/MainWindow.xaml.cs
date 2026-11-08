@@ -714,31 +714,6 @@ public partial class MainWindow : Window
         public string DisplayName => (IsEnabled ? "✓  " : "Ⅱ  ") + FileName;
     }
 
-    private sealed class InstanceListItem
-    {
-        public InstanceListItem(MinecraftInstance instance) => Instance = instance;
-        public MinecraftInstance Instance { get; }
-        public string Name => Instance.Name;
-        public string Details => $"Minecraft {Instance.MinecraftVersion} · {Instance.Loader} · created {Instance.CreatedAt.ToLocalTime():yyyy-MM-dd}";
-    }
-
-    private sealed class ModSearchResultItem
-    {
-        public ModSearchResultItem(ModrinthProject project) => Project = project;
-        public ModrinthProject Project { get; }
-        public string Title => Project.Title;
-        public string Description => Project.Description;
-        public string DownloadsLabel => $"{Project.Downloads:N0} downloads · by {Project.Author}";
-    }
-
-    private sealed class InstalledModItem
-    {
-        public InstalledModItem(string fileName) => FileName = fileName;
-        public string FileName { get; }
-        public bool IsEnabled => FileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase);
-        public string DisplayName => (IsEnabled ? "✓  " : "Ⅱ  ") + FileName;
-    }
-
     private sealed class VersionListItem : INotifyPropertyChanged
     {
         private bool _isInstalled;
