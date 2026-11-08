@@ -102,10 +102,12 @@ public sealed class MinecraftInstallationService
                     {
                         var nativePath = GetOptionalString(nativeArtifact, "path");
                         if (!string.IsNullOrWhiteSpace(nativePath))
+                        {
                             var nativeArchive = SafeCombine(Path.Combine(_root, "libraries"), nativePath);
                             nativeArchives.Add(nativeArchive);
                             tasks.Add(new DownloadItem(nativeArtifact.GetProperty("url").GetString()!,
                                 nativeArchive, GetOptionalString(nativeArtifact, "sha1")));
+                        }
                     }
                 }
             }
@@ -119,7 +121,7 @@ public sealed class MinecraftInstallationService
             {
                 await DownloadVerifiedAsync(new Uri(item.Url), item.Destination, item.Sha1, token);
                 var count = Interlocked.Increment(ref completed);
-                progress?.Report(new InstallationProgress($"Downloaded {Path.GetFileName(item.Destination)}", count, total));
+                progress?.Report(new InstallationProgress($"Downloaded {Path.GetFileName(item.Destination)}", count, total, total == 0 ? 0 : 0.5 * count / total));
             });
 
         if (root.TryGetProperty("assetIndex", out var indexMetadata))
@@ -146,7 +148,7 @@ public sealed class MinecraftInstallationService
                         await DownloadVerifiedAsync(new Uri(item.Url), item.Destination, item.Sha1, token);
                         var count = Interlocked.Increment(ref assetCompleted);
                         progress?.Report(new InstallationProgress($"Downloading assets ({count}/{assetTotal})",
-                            total + count, total + assetTotal));
+                            total + count, total + assetTotal, assetTotal == 0 ? 1 : 0.5 + 0.5 * count / assetTotal));
                     });
                 total += assetTotal;
             }
