@@ -1,4 +1,4 @@
-# Nour Launcher Architecture
+# Sky Client Architecture
 
 ## Layer boundaries
 - App: WPF presentation, navigation, view models, and user interaction. It must not own Minecraft installation rules.
