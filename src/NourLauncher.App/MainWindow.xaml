@@ -86,6 +86,27 @@
       <TextBlock Text="Local profiles are stored on this computer. They are not Microsoft accounts and do not verify Minecraft ownership. Server access depends on each server's authentication requirements." Foreground="#D0D8CF" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
+    <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
+     <TextBlock Text="RUNTIME MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#9BB68D" Margin="0,8,0,12"/>
+     <TextBlock Text="Java runtimes" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+     <TextBlock Text="Nour can keep Java versions separate from the Java installed on Windows." Foreground="{StaticResource NourMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
+     <Border Background="{StaticResource NourSurface}" CornerRadius="12" Padding="22">
+      <StackPanel>
+       <DockPanel>
+        <StackPanel>
+         <TextBlock Text="ECLIPSE TEMURIN 25" FontSize="16" FontWeight="Bold"/>
+         <TextBlock x:Name="Java25Status" Text="Not installed" Foreground="{StaticResource NourMuted}" Margin="0,5,0,0"/>
+        </StackPanel>
+        <Button x:Name="InstallJava25Button" Content="INSTALL JAVA 25" DockPanel.Dock="Right" Padding="16,9" Background="#6F995B" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallJava25_Click"/>
+       </DockPanel>
+       <ProgressBar x:Name="Java25Progress" Height="7" Margin="0,18,0,8" Minimum="0" Maximum="100" Visibility="Collapsed"/>
+       <TextBlock x:Name="Java25Message" Foreground="{StaticResource NourMuted}" TextWrapping="Wrap"/>
+      </StackPanel>
+     </Border>
+     <Border Background="#2B342D" CornerRadius="10" Padding="16" Margin="0,18,0,0">
+      <TextBlock Text="Java 25 is an optional managed runtime. Minecraft versions have different Java requirements; Nour must select a compatible runtime for each version. Installing Java 25 does not force older Minecraft versions to use it." Foreground="#D0D8CF" TextWrapping="Wrap" FontSize="12"/>
+     </Border>
+    </StackPanel>
     <StackPanel x:Name="PlaceholderPanel" Visibility="Collapsed">
      <TextBlock x:Name="PlaceholderTitle" Text="Coming soon" FontSize="34" FontWeight="Bold" Margin="0,8,0,8"/>
      <TextBlock Text="This section is planned for a future Nour Launcher milestone." Foreground="{StaticResource NourMuted}" FontSize="15"/>
