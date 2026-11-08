@@ -4,7 +4,8 @@ namespace NourLauncher.Minecraft.Instances;
 
 public sealed record MinecraftInstance(
     string Name, string MinecraftVersion, string Loader, string Directory,
-    DateTimeOffset CreatedAt, string? Notes = null);
+    DateTimeOffset CreatedAt, string? Notes = null,
+    string? LoaderProfileId = null, string? LoaderVersion = null);
 
 /// <summary>Creates and manages isolated game directories for Minecraft instances.</summary>
 public sealed class InstanceManager
@@ -72,6 +73,24 @@ public sealed class InstanceManager
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
             throw;
         }
+    }
+
+    public async Task SetLoaderProfileAsync(
+        string name, string loaderProfileId, string loaderVersion,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateName(name);
+        if (string.IsNullOrWhiteSpace(loaderProfileId) ||
+            loaderProfileId.Any(ch => !char.IsAsciiLetterOrDigit(ch) && ch is not '_' and not '-' and not '.'))
+            throw new ArgumentException("Invalid loader profile ID.", nameof(loaderProfileId));
+        var directory = Path.Combine(_root, "instances", name);
+        var metadataPath = Path.Combine(directory, "instance.json");
+        if (!File.Exists(metadataPath)) throw new DirectoryNotFoundException($"Instance '{name}' was not found.");
+        var current = JsonSerializer.Deserialize<MinecraftInstance>(
+            await File.ReadAllTextAsync(metadataPath, cancellationToken), JsonOptions)
+            ?? throw new InvalidDataException("Instance metadata is invalid.");
+        var updated = current with { LoaderProfileId = loaderProfileId, LoaderVersion = loaderVersion };
+        await File.WriteAllTextAsync(metadataPath, JsonSerializer.Serialize(updated, JsonOptions), cancellationToken);
     }
 
     public void Delete(string name)
