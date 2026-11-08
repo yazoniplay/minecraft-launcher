@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using NourLauncher.Minecraft.Authentication;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -519,6 +520,7 @@ public partial class MainWindow : Window
         public InstanceListItem(MinecraftInstance instance) => Instance = instance;
         public MinecraftInstance Instance { get; }
         public string Name => Instance.Name;
+        public string MinecraftVersion => Instance.MinecraftVersion;
         public string Details => $"Minecraft {Instance.MinecraftVersion} · {Instance.Loader} · created {Instance.CreatedAt.ToLocalTime():yyyy-MM-dd}";
     }
 
