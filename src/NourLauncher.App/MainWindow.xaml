@@ -109,7 +109,10 @@
          <TextBlock Text="INSTALL SELECTED VERSION" FontSize="11" FontWeight="Bold" Foreground="#8BC4FF"/>
          <TextBlock x:Name="SelectedVersionLabel" Text="Select a version above" FontSize="18" FontWeight="Bold" Margin="0,5,0,0"/>
         </StackPanel>
-        <Button x:Name="InstallVersionButton" Content="INSTALL VERSION" DockPanel.Dock="Right" Padding="17,10" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallVersion_Click" IsEnabled="False"/>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+         <Button x:Name="InstallVersionButton" Content="INSTALL VERSION" Padding="17,10" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallVersion_Click" IsEnabled="False"/>
+         <Button x:Name="PlayOfflineButton" Content="▶  PLAY OFFLINE" Padding="17,10" Margin="10,0,0,0" Background="#2F7A55" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="PlayOffline_Click" IsEnabled="False" ToolTip="Launch this version with your offline profile. Enable offline mode under Settings first."/>
+        </StackPanel>
        </DockPanel>
        <ProgressBar x:Name="VersionInstallProgress" Height="7" Margin="0,16,0,8" Minimum="0" Maximum="100" Visibility="Collapsed"/>
        <TextBlock x:Name="VersionInstallMessage" Foreground="{StaticResource SkyMuted}" TextWrapping="Wrap"/>
@@ -119,7 +122,7 @@
     <StackPanel x:Name="ProfilesPanel" Visibility="Collapsed">
      <TextBlock Text="ACCOUNT MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
      <TextBlock Text="Profiles" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
-     <TextBlock Text="Manage local launcher identities on this PC." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24"/>
+     <TextBlock Text="Manage offline player profiles on this PC. Each profile is a local player name used for offline launches." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24"/>
      <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="22" Margin="0,0,0,18">
       <StackPanel>
        <TextBlock Text="ADD OFFLINE PROFILE" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,0,0,12"/>
@@ -152,7 +155,7 @@
       </ItemsControl.ItemTemplate>
      </ItemsControl>
      <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,10,0,0">
-      <TextBlock Text="Local profiles are stored on this computer. They are not Microsoft accounts and do not verify Minecraft ownership. Server access depends on each server's authentication requirements." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
+      <TextBlock Text="Profiles are local player identities, not Microsoft accounts. Offline launches work in singleplayer and on LAN; servers that verify accounts will reject the connection." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
     <StackPanel x:Name="LuantiPanel" Visibility="Collapsed">
@@ -186,6 +189,18 @@
      </Border>
      <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,18,0,0">
       <TextBlock Text="Runtime selection is version-specific: older Minecraft releases may need Java 8 or 16, while modern releases declare their required Java major in Mojang metadata. Sky Client does not use or modify your system Java installation." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
+     </Border>
+     <TextBlock Text="ACCOUNT &amp; LAUNCH" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,30,0,12"/>
+     <TextBlock Text="Offline mode" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+     <TextBlock Text="Offline mode lets an installed Minecraft version start without signing in. The game uses a locally generated player identity, so world saves, inventory and LAN games stay tied to the same name." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,20" TextWrapping="Wrap"/>
+     <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="22">
+      <StackPanel>
+       <CheckBox x:Name="OfflineModeCheckBox" Content="Enable offline mode (launch without a Microsoft account)" FontWeight="SemiBold" Foreground="{StaticResource SkyText}" Checked="OfflineMode_Changed" Unchecked="OfflineMode_Changed"/>
+       <TextBlock x:Name="OfflineModeStatus" Text="Offline mode is OFF. Launching Minecraft requires a Microsoft session, which Sky Client does not support yet." Foreground="#A8B8C8" TextWrapping="Wrap" Margin="0,14,0,0"/>
+      </StackPanel>
+     </Border>
+     <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,18,0,0">
+      <TextBlock Text="Offline mode does not verify account ownership and does not provide skins, Realms, snapshots of your account or access to online servers that require authentication. Singleplayer and LAN play work; a legitimate Minecraft licence is still required to play." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
     <StackPanel x:Name="PlaceholderPanel" Visibility="Collapsed">
