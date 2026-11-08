@@ -247,7 +247,7 @@ public partial class MainWindow : Window
         try
         {
             await _javaRuntimeManager.InstallJava25Async(progress);
-            Java25Message.Text = "Java 25 installed successfully. It is now managed by Nour Launcher.";
+            Java25Message.Text = "Java 25 installed successfully. It is now managed by Sky Client.";
             RefreshJava25Status();
         }
         catch (Exception ex)
