@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using NourLauncher.Core.Models;
 using NourLauncher.Storage;
 using NourLauncher.Runtimes;
+using NourLauncher.Minecraft.Installation;
 
 namespace NourLauncher.App;
 
@@ -16,11 +17,17 @@ public partial class MainWindow : Window
     private readonly LauncherProfileStore _profileStore = new();
     private readonly JavaRuntimeManager _javaRuntimeManager = new();
     private readonly ObservableCollection<ProfileListItem> _profiles = new();
+    private readonly ObservableCollection<VersionListItem> _visibleVersions = new();
+    private readonly List<VersionListItem> _allVersions = new();
+    private readonly MinecraftInstallationService _installationService = new();
+    private bool _versionsLoaded;
+    private bool _isInstallingVersion;
 
     public MainWindow()
     {
         InitializeComponent();
         ProfilesList.ItemsSource = _profiles;
+        VersionList.ItemsSource = _visibleVersions;
         Loaded += async (_, _) =>
         {
             await RefreshProfilesAsync();
@@ -110,17 +117,113 @@ public partial class MainWindow : Window
     {
         HomePanel.Visibility = section == "Home" ? Visibility.Visible : Visibility.Collapsed;
         ProfilesPanel.Visibility = section == "Profiles" ? Visibility.Visible : Visibility.Collapsed;
+        VersionsPanel.Visibility = section == "Versions" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = section == "Settings" ? Visibility.Visible : Visibility.Collapsed;
-        PlaceholderPanel.Visibility = section is "Home" or "Profiles" or "Settings" ? Visibility.Collapsed : Visibility.Visible;
+        PlaceholderPanel.Visibility = section is "Home" or "Profiles" or "Settings" or "Versions" ? Visibility.Collapsed : Visibility.Visible;
         PlaceholderTitle.Text = section;
     }
 
     private void Home_Click(object sender, RoutedEventArgs e) => ShowSection("Home");
     private void Profiles_Click(object sender, RoutedEventArgs e) => ShowSection("Profiles");
-    private void Versions_Click(object sender, RoutedEventArgs e) => ShowSection("Versions");
+    private async void Versions_Click(object sender, RoutedEventArgs e)
+    {
+        ShowSection("Versions");
+        if (!_versionsLoaded) await LoadVersionsAsync();
+    }
     private void Instances_Click(object sender, RoutedEventArgs e) => ShowSection("Instances");
     private void Mods_Click(object sender, RoutedEventArgs e) => ShowSection("Mods");
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("Settings");
+
+    private async Task LoadVersionsAsync()
+    {
+        VersionsMessage.Text = "Loading official Minecraft versions from Mojang…";
+        try
+        {
+            var versions = await _installationService.GetVersionsAsync();
+            _allVersions.Clear();
+            _allVersions.AddRange(versions.Select(v => new VersionListItem(
+                v.Id, v.Type, v.ReleaseTime, _installationService.IsInstalled(v.Id))));
+            _versionsLoaded = true;
+            ApplyVersionFilters();
+            VersionsMessage.Text = $"Loaded {_allVersions.Count:N0} official versions. Select one to install.";
+        }
+        catch (Exception ex)
+        {
+            VersionsMessage.Text = "Could not load Minecraft versions: " + ex.Message;
+        }
+    }
+
+    private void ApplyVersionFilters()
+    {
+        if (_allVersions.Count == 0) return;
+        var query = VersionSearchInput.Text.Trim();
+        var selectedFilter = (VersionTypeFilter.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "all";
+        var filtered = _allVersions.Where(v =>
+            (selectedFilter == "all" || v.Type == selectedFilter) &&
+            (query.Length == 0 || v.Id.Contains(query, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        _visibleVersions.Clear();
+        foreach (var version in filtered) _visibleVersions.Add(version);
+        VersionsMessage.Text = $"Showing {_visibleVersions.Count:N0} of {_allVersions.Count:N0} versions.";
+    }
+
+    private void VersionSearchInput_TextChanged(object sender, TextChangedEventArgs e) => ApplyVersionFilters();
+    private void VersionTypeFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyVersionFilters();
+
+    private void VersionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SelectedVersionLabel is null || InstallVersionButton is null) return;
+        if (VersionList.SelectedItem is not VersionListItem selected)
+        {
+            SelectedVersionLabel.Text = "Select a version above";
+            InstallVersionButton.IsEnabled = false;
+            return;
+        }
+        SelectedVersionLabel.Text = selected.Id;
+        InstallVersionButton.Content = selected.IsInstalled ? "REINSTALL VERSION" : "INSTALL VERSION";
+        InstallVersionButton.IsEnabled = !_isInstallingVersion;
+    }
+
+    private async void RefreshVersions_Click(object sender, RoutedEventArgs e)
+    {
+        await LoadVersionsAsync();
+    }
+
+    private async void InstallVersion_Click(object sender, RoutedEventArgs e)
+    {
+        if (VersionList.SelectedItem is not VersionListItem selected || _isInstallingVersion) return;
+        _isInstallingVersion = true;
+        InstallVersionButton.IsEnabled = false;
+        VersionInstallProgress.Visibility = Visibility.Visible;
+        VersionInstallProgress.Value = 0;
+        VersionInstallMessage.Text = $"Preparing Minecraft {selected.Id}…";
+        var progress = new Progress<InstallationProgress>(update =>
+        {
+            VersionInstallProgress.Value = Math.Clamp(update.Percentage * 100, 0, 100);
+            VersionInstallMessage.Text = update.Message;
+        });
+
+        try
+        {
+            await _installationService.InstallAsync(selected.Id, progress);
+            selected.IsInstalled = true;
+            ApplyVersionFilters();
+            VersionList.SelectedItem = _visibleVersions.FirstOrDefault(v => v.Id == selected.Id);
+            VersionInstallProgress.Value = 100;
+            VersionInstallMessage.Text = $"Minecraft {selected.Id} is installed. Game files are cached; launching is the next milestone.";
+        }
+        catch (Exception ex)
+        {
+            VersionInstallMessage.Text = $"Installation failed: {ex.Message}";
+        }
+        finally
+        {
+            _isInstallingVersion = false;
+            InstallVersionButton.IsEnabled = VersionList.SelectedItem is VersionListItem;
+            if (VersionList.SelectedItem is VersionListItem current)
+                InstallVersionButton.Content = current.IsInstalled ? "REINSTALL VERSION" : "INSTALL VERSION";
+        }
+    }
 
     private void RefreshJava25Status()
     {
@@ -155,6 +258,41 @@ public partial class MainWindow : Window
         {
             InstallJava25Button.IsEnabled = true;
         }
+    }
+
+    private sealed class VersionListItem : INotifyPropertyChanged
+    {
+        private bool _isInstalled;
+
+        public VersionListItem(string id, string type, DateTimeOffset releaseTime, bool isInstalled)
+        {
+            Id = id;
+            Type = type;
+            ReleaseTime = releaseTime;
+            _isInstalled = isInstalled;
+        }
+
+        public string Id { get; }
+        public string Type { get; }
+        public DateTimeOffset ReleaseTime { get; }
+        public string TypeLabel => Type.Replace('_', ' ').ToUpperInvariant();
+        public string ReleaseDateLabel => ReleaseTime.ToLocalTime().ToString("yyyy-MM-dd");
+        public string StatusLabel => IsInstalled ? "INSTALLED" : "AVAILABLE";
+        public bool IsInstalled
+        {
+            get => _isInstalled;
+            set
+            {
+                if (_isInstalled == value) return;
+                _isInstalled = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(StatusLabel));
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     private sealed class ProfileListItem : INotifyPropertyChanged
