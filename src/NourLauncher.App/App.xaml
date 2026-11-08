@@ -3,13 +3,13 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  StartupUri="MainWindow.xaml">
  <Application.Resources>
-  <SolidColorBrush x:Key="NourBackground" Color="#171B18"/>
-  <SolidColorBrush x:Key="NourSurface" Color="#232A24"/>
-  <SolidColorBrush x:Key="NourGreen" Color="#6FA35B"/>
-  <SolidColorBrush x:Key="NourText" Color="#F0F1E9"/>
-  <SolidColorBrush x:Key="NourMuted" Color="#AAB3A7"/>
+  <SolidColorBrush x:Key="SkyBackground" Color="#111C28"/>
+  <SolidColorBrush x:Key="SkySurface" Color="#1F2D3B"/>
+  <SolidColorBrush x:Key="SkyBlue" Color="#3D8EDB"/>
+  <SolidColorBrush x:Key="SkyText" Color="#F2F7FC"/>
+  <SolidColorBrush x:Key="SkyMuted" Color="#A8B8C8"/>
   <Style x:Key="NavButton" TargetType="Button">
-   <Setter Property="Foreground" Value="#E5EAE1"/>
+   <Setter Property="Foreground" Value="#EAF4FF"/>
    <Setter Property="Background" Value="Transparent"/>
    <Setter Property="BorderThickness" Value="0"/>
    <Setter Property="HorizontalContentAlignment" Value="Left"/>
