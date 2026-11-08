@@ -5,9 +5,9 @@ using System.Text.Json;
 
 namespace NourLauncher.Minecraft.Installation;
 
-public sealed record InstallationProgress(string Message, int CompletedFiles, int TotalFiles)
+public sealed record InstallationProgress(string Message, int CompletedFiles, int TotalFiles, double? OverallPercentage = null)
 {
-    public double Percentage => TotalFiles == 0 ? 0 : (double)CompletedFiles / TotalFiles;
+    public double Percentage => OverallPercentage ?? (TotalFiles == 0 ? 0 : (double)CompletedFiles / TotalFiles);
 }
 
 public sealed class MinecraftInstallationService
