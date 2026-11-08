@@ -89,7 +89,7 @@ public sealed class JavaRuntimeManager
 
             var extractedRoot = Directory.GetParent(Path.GetDirectoryName(javaw)!)!.FullName;
             Directory.Move(extractedRoot, replacementPath);
-            var candidate = Path.Combine(replacementPath, "bin", "javaw.exe");
+            var candidate = Path.Combine(replacementPath, "bin", "java.exe");
             if (!await IsUsableAsync(candidate, majorVersion, cancellationToken))
                 throw new InvalidDataException($"The downloaded runtime did not report Java {majorVersion}.");
 
@@ -129,7 +129,7 @@ public sealed class JavaRuntimeManager
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = executable,
+                    FileName = Path.Combine(Path.GetDirectoryName(executable)!, "java.exe"),
                     Arguments = "-version",
                     UseShellExecute = false,
                     RedirectStandardError = true,
@@ -148,8 +148,10 @@ public sealed class JavaRuntimeManager
             var marker = "version \"";
             var index = output.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
             if (index < 0) return false;
-            var version = output[(index + marker.Length)..].Split('"', '.', '+', '-')[0];
-            if (!int.TryParse(version, out var actualMajor)) return false;
+            var versionParts = output[(index + marker.Length)..].Split('"', '+', '-')[0].Split('.');
+            if (!int.TryParse(versionParts[0], out var actualMajor)) return false;
+            if (actualMajor == 1 && versionParts.Length > 1 && int.TryParse(versionParts[1], out var legacyMajor))
+                actualMajor = legacyMajor;
             return actualMajor == expectedMajor;
         }
         catch (OperationCanceledException) when (!token.IsCancellationRequested) { return false; }
