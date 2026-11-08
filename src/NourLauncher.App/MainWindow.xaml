@@ -63,7 +63,7 @@
       <TextBox x:Name="VersionSearchInput" Height="36" Padding="11,8" FontSize="14" Background="#1F2D3B" Foreground="#F2F7FC" BorderBrush="#36516A" VerticalContentAlignment="Center" ToolTip="Search versions, e.g. 1.20.1" TextChanged="VersionSearchInput_TextChanged"/>
      </DockPanel>
      <Border Background="{StaticResource SkySurface}" BorderBrush="#36516A" BorderThickness="1" CornerRadius="10" Padding="10">
-      <ListView x:Name="VersionList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource SkyText}" SelectionMode="Single" MinHeight="330">
+      <ListView x:Name="VersionList" Background="Transparent" BorderThickness="0" Foreground="{StaticResource SkyText}" SelectionMode="Single" MinHeight="330" SelectionChanged="VersionList_SelectionChanged">
        <ListView.ItemContainerStyle>
         <Style TargetType="ListViewItem">
          <Setter Property="Padding" Value="10,12"/>
