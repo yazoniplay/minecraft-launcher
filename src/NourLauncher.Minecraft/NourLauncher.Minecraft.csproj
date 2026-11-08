@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../NourLauncher.Core/NourLauncher.Core.csproj" />
+    <ProjectReference Include="../NourLauncher.Downloads/NourLauncher.Downloads.csproj" />
+  </ItemGroup>
+</Project>
