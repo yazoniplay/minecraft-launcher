@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using NourLauncher.Core.Accounts;
 
 namespace NourLauncher.Minecraft.Launching;
 
 /// <summary>
-/// A session produced by a real Microsoft/Minecraft authentication flow.
-/// Do not construct this from a local launcher profile or a placeholder token.
+/// A launch session: either a real Microsoft/Minecraft authentication result or an
+/// explicitly requested offline identity (<see cref="IsOffline"/>).
 /// </summary>
 public sealed record MinecraftLaunchSession(
     string Username,
@@ -14,18 +15,51 @@ public sealed record MinecraftLaunchSession(
     string AccessToken,
     string UserType = "msa",
     string ClientId = "",
-    string Xuid = "")
+    string Xuid = "",
+    bool IsOffline = false)
 {
+    /// <summary>
+    /// Builds the offline session the vanilla client accepts in singleplayer/LAN:
+    /// a deterministic name-derived UUID, no access token and the legacy user type.
+    /// This is intentionally not an authenticated session — nothing here proves ownership.
+    /// </summary>
+    public static MinecraftLaunchSession CreateOffline(string username)
+    {
+        if (!OfflineAccount.IsValidUsername(username))
+            throw new ArgumentException("Offline player names must be 3-16 letters, numbers or underscores.", nameof(username));
+
+        var session = new MinecraftLaunchSession(
+            Username: username,
+            Uuid: OfflineAccount.ComputeUuid(username),
+            AccessToken: "0",
+            UserType: "legacy",
+            IsOffline: true);
+        session.Validate();
+        return session;
+    }
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(Username))
-            throw new InvalidOperationException("The authenticated account has no Minecraft profile name.");
+            throw new InvalidOperationException("The account has no Minecraft profile name.");
+
+        if (IsOffline)
+        {
+            // Offline identities are derived locally; they must stay within the vanilla name rules
+            // so the UUID and the profile directory name remain valid.
+            if (!OfflineAccount.IsValidUsername(Username))
+                throw new InvalidOperationException("Offline player names must be 3-16 letters, numbers or underscores.");
+            if (!Guid.TryParse(Uuid, out _))
+                throw new InvalidOperationException("The offline identity UUID could not be derived.");
+            return;
+        }
+
         if (!Guid.TryParseExact(Uuid, "N", out _) && !Guid.TryParse(Uuid, out _))
             throw new InvalidOperationException("The authenticated account UUID is invalid.");
         if (string.IsNullOrWhiteSpace(AccessToken) ||
             AccessToken.Equals("0", StringComparison.OrdinalIgnoreCase) ||
             AccessToken.Contains("placeholder", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("A valid Minecraft access token is required. Local profiles cannot launch the game.");
+            throw new InvalidOperationException("A valid Minecraft access token is required for online play.");
     }
 }
 
@@ -37,7 +71,8 @@ public sealed record MinecraftLaunchRequest(
 
 /// <summary>
 /// Builds a launch command from Mojang version metadata and starts Minecraft.
-/// Requires a real authenticated Minecraft session; local profile names are not accepted.
+/// Accepts a real authenticated session, or an offline session created with
+/// <see cref="MinecraftLaunchSession.CreateOffline"/> when the user has enabled offline mode.
 /// </summary>
 public sealed class MinecraftLaunchService
 {
@@ -242,15 +277,22 @@ public sealed class MinecraftLaunchService
         string classpath)
     {
         var uuid = Guid.Parse(session.Uuid).ToString("N");
+        // Legacy (pre-1.6) argument sets reference ${auth_session} and ${game_assets}/
+        // ${user_properties}; modern versions ignore them, but supplying them keeps
+        // old alpha/beta versions launchable instead of failing on unresolved tokens.
+        var legacyAssetRoot = Path.Combine(assetRoot, "virtual", "legacy");
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["auth_player_name"] = session.Username,
             ["version_name"] = request.VersionId,
             ["game_directory"] = gameDirectory,
             ["assets_root"] = assetRoot,
+            ["game_assets"] = legacyAssetRoot,
             ["assets_index_name"] = assetIndex,
             ["auth_uuid"] = uuid,
             ["auth_access_token"] = session.AccessToken,
+            ["auth_session"] = $"token:{session.AccessToken}:{uuid}",
+            ["user_properties"] = "{}",
             ["user_type"] = session.UserType,
             ["version_type"] = "release",
             ["natives_directory"] = nativesDirectory,
