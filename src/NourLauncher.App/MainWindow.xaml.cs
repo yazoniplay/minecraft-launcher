@@ -213,7 +213,8 @@ public partial class MainWindow : Window
                 VersionInstallProgress.Value = 50 + Math.Clamp(value * 50, 0, 50);
                 VersionInstallMessage.Text = $"Installing private Java {javaMajor}…";
             });
-            var javaPath = await _javaRuntimeManager.EnsureRuntimeAsync(javaMajor, runtimeProgress);
+            await _javaRuntimeManager.EnsureRuntimeAsync(javaMajor, runtimeProgress);
+            RefreshManagedJavaStatus();
             selected.IsInstalled = true;
             ApplyVersionFilters();
             VersionList.SelectedItem = _visibleVersions.FirstOrDefault(v => v.Id == selected.Id);
