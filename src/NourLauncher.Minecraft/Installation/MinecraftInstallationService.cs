@@ -50,7 +50,8 @@ public sealed class MinecraftInstallationService
         IProgress<InstallationProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(versionId) || versionId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        if (string.IsNullOrWhiteSpace(versionId) || versionId is "." or ".." ||
+            versionId.Any(ch => !char.IsAsciiLetterOrDigit(ch) && ch is not '_' and not '-' and not '.'))
             throw new ArgumentException("Invalid Minecraft version ID.", nameof(versionId));
 
         var manifest = await GetVersionEntryAsync(versionId, cancellationToken);
@@ -245,6 +246,7 @@ public sealed class MinecraftInstallationService
         foreach (var rule in rules.EnumerateArray())
         {
             var matches = true;
+            if (rule.TryGetProperty("features", out _)) matches = false;
             if (rule.TryGetProperty("os", out var os))
             {
                 if (os.TryGetProperty("name", out var name) && name.GetString() != "windows") matches = false;
