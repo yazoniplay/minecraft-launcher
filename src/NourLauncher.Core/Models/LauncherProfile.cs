@@ -10,8 +10,7 @@ namespace NourLauncher.Core.Models;
 public enum LauncherAccountType
 {
     Offline = 0,
-    Microsoft = 1,
-    ElyBy = 2
+    Microsoft = 1
 }
 
 /// <summary>
@@ -28,11 +27,7 @@ public sealed record LauncherProfile(
 {
     /// <summary>Display name of the account type, shown in the profile list.</summary>
     [JsonIgnore]
-    public string AccountTypeLabel => AccountType switch
-    {
-        LauncherAccountType.Offline => "Offline account",
-        LauncherAccountType.Microsoft => "Microsoft account",
-        LauncherAccountType.ElyBy => "Ely.by account",
-        _ => "Unknown account"
-    };
+    public string AccountTypeLabel => AccountType == LauncherAccountType.Offline
+        ? "Offline account"
+        : "Microsoft account";
 }
