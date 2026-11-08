@@ -74,7 +74,7 @@ public sealed class MinecraftInstallationService
             var indexId = assetIndex.GetProperty("id").GetString()!;
             var indexPath = Path.Combine(_root, "assets", "indexes", indexId + ".json");
             tasks.Add(new DownloadItem(assetIndex.GetProperty("url").GetString()!, indexPath,
-                GetOptionalString(assetIndex, "sha1"), IsAssetIndex: true));
+                GetOptionalString(assetIndex, "sha1")));
         }
 
         if (root.TryGetProperty("libraries", out var libraries))
@@ -114,8 +114,9 @@ public sealed class MinecraftInstallationService
         }
 
         var completed = 0;
-        var total = tasks.Count;
-        await Parallel.ForEachAsync(tasks.DistinctBy(x => x.Destination),
+        var downloadTasks = tasks.DistinctBy(x => x.Destination).ToArray();
+        var total = downloadTasks.Length;
+        await Parallel.ForEachAsync(downloadTasks,
             new ParallelOptions { MaxDegreeOfParallelism = 8, CancellationToken = cancellationToken },
             async (item, token) =>
             {
