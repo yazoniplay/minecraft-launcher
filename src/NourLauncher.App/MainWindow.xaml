@@ -19,7 +19,7 @@
     <StackPanel DockPanel.Dock="Bottom">
      <Button Content="♙   Profiles" Style="{StaticResource NavButton}" Click="Profiles_Click"/>
      <Button Content="⚙   Settings" Style="{StaticResource NavButton}" Click="Settings_Click"/>
-     <TextBlock Text="SKY LAUNCHER  ·  ALPHA" Foreground="{StaticResource SkyMuted}" FontSize="10" Margin="2,18,0,0"/>
+     <TextBlock Text="SKY CLIENT  ·  ALPHA" Foreground="{StaticResource SkyMuted}" FontSize="10" Margin="2,18,0,0"/>
     </StackPanel>
    </DockPanel>
   </Border>
@@ -27,7 +27,7 @@
    <Grid Margin="38">
     <StackPanel x:Name="HomePanel">
      <TextBlock Text="YOUR WORLDS AWAIT." FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
-     <TextBlock Text="Welcome to Nour." FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+     <TextBlock Text="Welcome to Sky Client." FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
      <TextBlock Text="One home for every Minecraft version." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,30"/>
      <Border CornerRadius="12" Background="#1F4D75" Padding="28" Margin="0,0,0,22">
       <StackPanel>
