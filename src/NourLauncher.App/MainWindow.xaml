@@ -1,0 +1,55 @@
+<Window x:Class="NourLauncher.App.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Nour Launcher" Height="760" Width="1180"
+ MinHeight="650" MinWidth="960" WindowStartupLocation="CenterScreen"
+ Background="{StaticResource NourBackground}" Foreground="{StaticResource NourText}">
+ <Grid>
+  <Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+  <Border Grid.Column="0" Background="#202720" Padding="22">
+   <DockPanel>
+    <StackPanel DockPanel.Dock="Top">
+     <TextBlock Text="▰  NOUR" FontSize="25" FontWeight="ExtraBold" Foreground="#DCE8D5" Margin="0,4,0,34"/>
+     <TextBlock Text="LIBRARY" Foreground="{StaticResource NourMuted}" FontSize="11" FontWeight="Bold" Margin="0,0,0,12"/>
+     <Button Content="⌂   Home" Style="{StaticResource NavButton}"/>
+     <Button Content="▦   Versions" Style="{StaticResource NavButton}"/>
+     <Button Content="◇   Instances" Style="{StaticResource NavButton}"/>
+     <Button Content="▧   Mods" Style="{StaticResource NavButton}"/>
+    </StackPanel>
+    <StackPanel DockPanel.Dock="Bottom">
+     <Button Content="⚙   Settings" Style="{StaticResource NavButton}"/>
+     <TextBlock Text="NOUR LAUNCHER  ·  ALPHA" Foreground="{StaticResource NourMuted}" FontSize="10" Margin="2,18,0,0"/>
+    </StackPanel>
+   </DockPanel>
+  </Border>
+  <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+   <StackPanel Margin="38">
+    <TextBlock Text="YOUR WORLDS AWAIT." FontSize="12" FontWeight="Bold" Foreground="#9BB68D" Margin="0,8,0,12"/>
+    <TextBlock Text="Welcome to Nour." FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+    <TextBlock Text="One home for every Minecraft version." Foreground="{StaticResource NourMuted}" FontSize="15" Margin="0,0,0,30"/>
+    <Border CornerRadius="12" Background="#344A35" Padding="28" Margin="0,0,0,22">
+     <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel VerticalAlignment="Center">
+       <TextBlock Text="READY WHEN YOU ARE" Foreground="#D0E1C8" FontSize="11" FontWeight="Bold"/>
+       <TextBlock Text="Minecraft, your way." FontSize="27" FontWeight="Bold" Margin="0,8,0,5"/>
+       <TextBlock Text="Install a version to get started." Foreground="#D0E1C8"/>
+      </StackPanel>
+      <Border Grid.Column="1" Background="#719B58" CornerRadius="8" Padding="24,13" VerticalAlignment="Center">
+       <TextBlock Text="GET STARTED" FontWeight="Bold" Foreground="White"/>
+      </Border>
+     </Grid>
+    </Border>
+    <TextBlock Text="QUICK ACCESS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NourMuted}" Margin="0,0,0,14"/>
+    <UniformGrid Columns="2">
+     <Border Background="{StaticResource NourSurface}" CornerRadius="10" Padding="20" Margin="0,0,10,0">
+      <StackPanel><TextBlock Text="▦  VERSION LIBRARY" FontWeight="Bold"/><TextBlock Text="Browse official releases and snapshots." Foreground="{StaticResource NourMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
+     </Border>
+     <Border Background="{StaticResource NourSurface}" CornerRadius="10" Padding="20" Margin="10,0,0,0">
+      <StackPanel><TextBlock Text="◇  MOD MANAGER" FontWeight="Bold"/><TextBlock Text="Your mods, loaders and modpacks." Foreground="{StaticResource NourMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
+     </Border>
+    </UniformGrid>
+   </StackPanel>
+  </ScrollViewer>
+ </Grid>
+</Window>
