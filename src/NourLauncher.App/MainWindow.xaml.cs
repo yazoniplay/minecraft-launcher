@@ -9,7 +9,9 @@ using NourLauncher.Storage;
 using NourLauncher.Runtimes;
 using NourLauncher.Minecraft.Installation;
 using NourLauncher.Minecraft.Launching;
-using NourLauncher.App.Games;
+using NourLauncher.Minecraft.Mods;
+using NourLauncher.Minecraft.Instances;
+using NourLauncher.Minecraft.Diagnostics;
 
 namespace NourLauncher.App;
 
@@ -24,9 +26,14 @@ public partial class MainWindow : Window
     private readonly List<VersionListItem> _allVersions = new();
     private readonly MinecraftInstallationService _installationService = new();
     private readonly MinecraftLaunchService _launchService = new();
-    private readonly LuantiManager _luantiManager = new();
+    private readonly ModrinthService _modrinthService = new();
+    private readonly InstanceManager _instanceManager = new();
+    private readonly CrashDiagnosticsService _crashDiagnostics = new();
+    private readonly ObservableCollection<InstanceListItem> _instances = new();
+    private readonly ObservableCollection<ModSearchResultItem> _modSearchResults = new();
+    private readonly ObservableCollection<InstalledModItem> _installedMods = new();
+    private readonly ObservableCollection<CrashReport> _crashReports = new();
     private LauncherSettings _settings = new();
-    private bool _isInstallingLuanti;
     private bool _versionsLoaded;
     private bool _isInstallingVersion;
     private bool _isLaunching;
@@ -37,11 +44,17 @@ public partial class MainWindow : Window
         InitializeComponent();
         ProfilesList.ItemsSource = _profiles;
         VersionList.ItemsSource = _visibleVersions;
+        InstancesList.ItemsSource = _instances;
+        ModInstanceSelector.ItemsSource = _instances;
+        ModSearchResults.ItemsSource = _modSearchResults;
+        InstalledModsList.ItemsSource = _installedMods;
+        CrashReportsList.ItemsSource = _crashReports;
         Loaded += async (_, _) =>
         {
             await LoadSettingsAsync();
             await RefreshProfilesAsync();
             RefreshManagedJavaStatus();
+            RefreshInstances();
         };
     }
 
@@ -71,7 +84,6 @@ public partial class MainWindow : Window
             if (_profiles.Count > 0 && !_profiles.Any(p => p.IsActive))
                 _profiles[0].IsActive = true;
             RefreshProfileLabels();
-            LuantiUsernameInput.Text = _profiles.FirstOrDefault(p => p.IsActive)?.Username ?? "Player";
         }
         catch (Exception ex)
         {
@@ -146,58 +158,18 @@ public partial class MainWindow : Window
         ProfilesPanel.Visibility = section == "Profiles" ? Visibility.Visible : Visibility.Collapsed;
         VersionsPanel.Visibility = section == "Versions" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = section == "Settings" ? Visibility.Visible : Visibility.Collapsed;
-        LuantiPanel.Visibility = section == "OfflineGame" ? Visibility.Visible : Visibility.Collapsed;
-        PlaceholderPanel.Visibility = section is "Home" or "Profiles" or "Settings" or "Versions" or "OfflineGame" ? Visibility.Collapsed : Visibility.Visible;
-        PlaceholderTitle.Text = section;
+        InstancesPanel.Visibility = section == "Instances" ? Visibility.Visible : Visibility.Collapsed;
+        ModsPanel.Visibility = section == "Mods" ? Visibility.Visible : Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = section == "Diagnostics" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Home_Click(object sender, RoutedEventArgs e) => ShowSection("Home");
     private void Profiles_Click(object sender, RoutedEventArgs e) => ShowSection("Profiles");
-    private async void Versions_Click(object sender, RoutedEventArgs e)
-    {
-        ShowSection("Versions");
-        if (!_versionsLoaded) await LoadVersionsAsync();
-    }
-    private void Instances_Click(object sender, RoutedEventArgs e) => ShowSection("Instances");
-    private void Mods_Click(object sender, RoutedEventArgs e) => ShowSection("Mods");
+    private async void Versions_Click(object sender, RoutedEventArgs e) { ShowSection("Versions"); if (!_versionsLoaded) await LoadVersionsAsync(); }
+    private void Instances_Click(object sender, RoutedEventArgs e) { ShowSection("Instances"); RefreshInstances(); if (_allVersions.Count == 0) _ = LoadVersionsAsync(); InstanceVersionSelector.ItemsSource = _allVersions; }
+    private void Mods_Click(object sender, RoutedEventArgs e) { ShowSection("Mods"); RefreshInstances(); if (ModInstanceSelector.SelectedItem is null && _instances.Count > 0) ModInstanceSelector.SelectedIndex = 0; RefreshInstalledMods(); }
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("Settings");
-    private void OfflineGame_Click(object sender, RoutedEventArgs e)
-    {
-        ShowSection("OfflineGame");
-        LuantiUsernameInput.Text = _profiles.FirstOrDefault(p => p.IsActive)?.Username ?? LuantiUsernameInput.Text;
-        LuantiStatus.Text = _luantiManager.IsInstalled
-            ? "Luanti and Minetest Game are installed. Ready to launch."
-            : "Not installed yet. Press INSTALL & PLAY to download the game files.";
-        InstallPlayLuantiButton.Content = _luantiManager.IsInstalled ? "PLAY LUANTI" : "INSTALL & PLAY";
-    }
-
-    private async void InstallPlayLuanti_Click(object sender, RoutedEventArgs e)
-    {
-        if (_isInstallingLuanti) return;
-        _isInstallingLuanti = true;
-        InstallPlayLuantiButton.IsEnabled = false;
-        var username = LuantiUsernameInput.Text.Trim();
-        var progress = new Progress<string>(message => LuantiStatus.Text = message);
-        try
-        {
-            if (!_luantiManager.IsInstalled)
-                await _luantiManager.InstallAsync(username, progress);
-            LuantiStatus.Text = "Starting Luanti…";
-            await _luantiManager.LaunchAsync(username);
-            LuantiStatus.Text = "Luanti launched. Create a singleplayer world from its main menu to start playing.";
-            InstallPlayLuantiButton.Content = "PLAY LUANTI";
-        }
-        catch (Exception ex)
-        {
-            LuantiStatus.Text = "Could not start the offline game: " + ex.Message;
-        }
-        finally
-        {
-            _isInstallingLuanti = false;
-            InstallPlayLuantiButton.IsEnabled = true;
-        }
-    }
-
+    private void Diagnostics_Click(object sender, RoutedEventArgs e) { ShowSection("Diagnostics"); ScanDiagnostics(); }
     private async Task LoadVersionsAsync()
     {
         VersionsMessage.Text = "Loading official Minecraft versions from Mojang…";
