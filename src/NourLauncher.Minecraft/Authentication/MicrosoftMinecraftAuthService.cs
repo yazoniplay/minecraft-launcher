@@ -54,7 +54,7 @@ public sealed class MicrosoftMinecraftAuthService
         IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         using var oauth = await PollForMicrosoftTokenAsync(clientId, deviceCode, progress, cancellationToken);
-        var microsoftAccessToken = oauth.GetProperty("access_token").GetString()!;
+        var microsoftAccessToken = oauth.RootElement.GetProperty("access_token").GetString()!;
         progress?.Report("Verifying Xbox Live account…");
 
         var xbox = await PostJsonAsync("https://user.auth.xboxlive.com/user/authenticate", new
