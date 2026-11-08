@@ -5,7 +5,7 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 ## Goals
 - Discover official Minecraft versions from Mojang metadata.
 - Install and launch independent Minecraft instances.
-- Manage compatible Java runtimes without relying on system Java.
+- Install and manage private Eclipse Temurin Java 25 alongside version-compatible runtimes; no system Java dependency.
 - Cache game files for eligible offline play after legitimate authentication.
 - Manage Fabric, Forge, NeoForge, Quilt, and mods.
 - Build Windows artifacts through GitHub Actions.
@@ -25,10 +25,10 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 - tests: automated tests.
 
 ## Development status
-Early scaffold. The current milestone is the application shell and reliable version metadata discovery. Installation, authentication, runtime provisioning, mod loaders, and offline validation will be implemented in subsequent milestones.
+Early alpha. The WPF shell includes persistent local profile management and a Settings screen that can install a private Eclipse Temurin Java 25 JRE. Full game installation, Microsoft authentication, version-aware runtime selection, mod loaders, and authenticated offline launch are still in progress.
 
 ## Account and offline behavior
-Nour does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local development profiles are for launcher UI and test workflows, not an ownership or authentication bypass.
+Nour does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local profiles are stored on this PC and currently identify a launcher UI profile only. They are not Microsoft accounts and cannot be used to bypass Minecraft ownership or server authentication. Authenticated offline play remains a separate feature.
 
 ## Build
 Open NourLauncher.sln in Visual Studio 2026 or build with the .NET 10 SDK:
