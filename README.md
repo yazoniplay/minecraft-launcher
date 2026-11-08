@@ -28,7 +28,7 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 Early alpha. The WPF shell includes persistent local profile management and a Settings screen that can install a private Eclipse Temurin Java 25 JRE. Full game installation, Microsoft authentication, version-aware runtime selection, mod loaders, and authenticated offline launch are still in progress.
 
 ## Account and offline behavior
-Nour does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local profiles are stored on this PC and currently identify a launcher UI profile only. They are not Microsoft accounts and cannot be used to bypass Minecraft ownership or server authentication. Authenticated offline play remains a separate feature.
+Sky Client does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local profiles are stored on this PC and currently identify a launcher UI profile only. They are not Microsoft accounts and cannot be used to bypass Minecraft ownership or server authentication. Authenticated offline play remains a separate feature.
 
 ## Build
 Open NourLauncher.sln in Visual Studio 2026 or build with the .NET 10 SDK:
