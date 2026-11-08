@@ -1,11 +1,17 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using NourLauncher.Core.Models;
 
 namespace NourLauncher.Storage;
 
 public sealed class LauncherProfileStore
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     private readonly string _filePath;
 
     public LauncherProfileStore(string? rootDirectory = null)
