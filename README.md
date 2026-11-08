@@ -4,7 +4,7 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 
 ## Goals
 - Browse official Minecraft releases, snapshots, old beta and alpha versions from Mojang metadata.\n- Install version metadata, client jars, Windows libraries, native archives, and assets with SHA-1 verification.\n- Read each version’s declared Java major and provision an isolated Eclipse Temurin runtime automatically (legacy fallback for older metadata).
-- Install and launch independent Minecraft instances.
+- Install and launch independent Minecraft instances when a valid authenticated session is available.\n- Install and launch Luanti with Minetest Game as a genuinely free, offline-playable voxel sandbox.
 - Install and manage private Eclipse Temurin Java 25 alongside version-compatible runtimes; no system Java dependency.
 - Cache game files for eligible offline play after legitimate authentication.
 - Manage Fabric, Forge, NeoForge, Quilt, and mods.
@@ -25,10 +25,10 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 - tests: automated tests.
 
 ## Development status
-Early alpha. The WPF shell includes persistent local profile management, automatic version-specific Eclipse Temurin runtime management, and an official Minecraft version library. The version installer downloads Mojang metadata, the client jar, applicable Windows libraries and native archives, plus indexed assets, verifying SHA-1 hashes where provided. The Minecraft launch engine now resolves inherited version metadata, builds the library classpath, expands modern and legacy JVM/game arguments, and can start the Java process when supplied a real authenticated session. Microsoft authentication and wiring the authenticated launch flow into the WPF UI remain in progress; mod loaders and authenticated offline launch are also unfinished.
+Early alpha. The WPF shell includes persistent local profile management, automatic version-specific Eclipse Temurin runtime management, an official Minecraft version library, and a separate offline-playable Luanti integration. The Luanti integration downloads the official Windows x64 release and the official Minetest Game package, verifies the engine archive SHA-256 when supplied, and launches it using a Sky Client local player name. The version installer downloads Mojang metadata, the client jar, applicable Windows libraries and native archives, plus indexed assets, verifying SHA-1 hashes where provided. The Minecraft launch engine now resolves inherited version metadata, builds the library classpath, expands modern and legacy JVM/game arguments, and can start the Java process when supplied a real authenticated session. Microsoft authentication and wiring the authenticated Minecraft launch flow into the WPF UI remain in progress; mod loaders and authenticated Minecraft offline launch are also unfinished.
 
 ## Account and offline behavior
-Sky Client does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local profiles are stored on this PC and currently identify a launcher UI profile only; they cannot be passed to the launch engine as authenticated sessions. They are not Microsoft accounts and cannot be used to bypass Minecraft ownership or server authentication. Authenticated offline play remains a separate feature.
+Sky Client does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local profiles are stored on this PC and identify launcher UI profiles only; they cannot be passed to the Minecraft launch engine as authenticated sessions. They are not Microsoft accounts and cannot be used to bypass Minecraft ownership or server authentication. The Offline Game page launches Luanti, a separate open-source voxel game, not Minecraft. Luanti uses the selected local player name and supports local singleplayer worlds without Microsoft sign-in.
 
 ## Build
 Open NourLauncher.sln in Visual Studio 2026 or build with the .NET 10 SDK:
