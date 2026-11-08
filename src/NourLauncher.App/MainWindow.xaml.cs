@@ -628,7 +628,7 @@ public partial class MainWindow : Window
         if (OfflineModeStatus is not null)
             OfflineModeStatus.Text = _settings.AllowOfflineMode
                 ? "Offline mode is ON. Installed versions can be launched with the selected profile's local identity — no account sign-in takes place."
-                : "Offline mode is OFF. Choose a signed-in Microsoft or Ely.by profile to launch with online authentication.";
+                : "Offline mode is OFF. Choose a signed-in Microsoft profile to launch with online authentication.";
 
         RefreshLaunchState();
     }
