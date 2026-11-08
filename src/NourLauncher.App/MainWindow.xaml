@@ -1,16 +1,16 @@
 <Window x:Class="NourLauncher.App.MainWindow"
  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- Title="Nour Launcher" Height="760" Width="1180"
+ Title="Sky Client" Height="760" Width="1180"
  MinHeight="650" MinWidth="960" WindowStartupLocation="CenterScreen"
- Background="{StaticResource NourBackground}" Foreground="{StaticResource NourText}">
+ Background="{StaticResource SkyBackground}" Foreground="{StaticResource SkyText}">
  <Grid>
   <Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-  <Border Grid.Column="0" Background="#202720" Padding="22">
+  <Border Grid.Column="0" Background="#172738" Padding="22">
    <DockPanel>
     <StackPanel DockPanel.Dock="Top">
-     <TextBlock Text="▰  NOUR" FontSize="25" FontWeight="ExtraBold" Foreground="#DCE8D5" Margin="0,4,0,34"/>
-     <TextBlock Text="LIBRARY" Foreground="{StaticResource NourMuted}" FontSize="11" FontWeight="Bold" Margin="0,0,0,12"/>
+     <TextBlock Text="▰  SKY" FontSize="25" FontWeight="ExtraBold" Foreground="#E2F1FF" Margin="0,4,0,34"/>
+     <TextBlock Text="LIBRARY" Foreground="{StaticResource SkyMuted}" FontSize="11" FontWeight="Bold" Margin="0,0,0,12"/>
      <Button Content="⌂   Home" Style="{StaticResource NavButton}" Click="Home_Click"/>
      <Button Content="▦   Versions" Style="{StaticResource NavButton}" Click="Versions_Click"/>
      <Button Content="◇   Instances" Style="{StaticResource NavButton}" Click="Instances_Click"/>
@@ -19,59 +19,59 @@
     <StackPanel DockPanel.Dock="Bottom">
      <Button Content="♙   Profiles" Style="{StaticResource NavButton}" Click="Profiles_Click"/>
      <Button Content="⚙   Settings" Style="{StaticResource NavButton}" Click="Settings_Click"/>
-     <TextBlock Text="NOUR LAUNCHER  ·  ALPHA" Foreground="{StaticResource NourMuted}" FontSize="10" Margin="2,18,0,0"/>
+     <TextBlock Text="SKY LAUNCHER  ·  ALPHA" Foreground="{StaticResource SkyMuted}" FontSize="10" Margin="2,18,0,0"/>
     </StackPanel>
    </DockPanel>
   </Border>
   <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
    <Grid Margin="38">
     <StackPanel x:Name="HomePanel">
-     <TextBlock Text="YOUR WORLDS AWAIT." FontSize="12" FontWeight="Bold" Foreground="#9BB68D" Margin="0,8,0,12"/>
+     <TextBlock Text="YOUR WORLDS AWAIT." FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
      <TextBlock Text="Welcome to Nour." FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
-     <TextBlock Text="One home for every Minecraft version." Foreground="{StaticResource NourMuted}" FontSize="15" Margin="0,0,0,30"/>
-     <Border CornerRadius="12" Background="#344A35" Padding="28" Margin="0,0,0,22">
+     <TextBlock Text="One home for every Minecraft version." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,30"/>
+     <Border CornerRadius="12" Background="#1F4D75" Padding="28" Margin="0,0,0,22">
       <StackPanel>
-       <TextBlock Text="READY WHEN YOU ARE" Foreground="#D0E1C8" FontSize="11" FontWeight="Bold"/>
+       <TextBlock Text="READY WHEN YOU ARE" Foreground="#D7EAFA" FontSize="11" FontWeight="Bold"/>
        <TextBlock Text="Minecraft, your way." FontSize="27" FontWeight="Bold" Margin="0,8,0,5"/>
-       <TextBlock Text="The launcher foundation is in place. Profile management is available now." Foreground="#D0E1C8" TextWrapping="Wrap"/>
+       <TextBlock Text="The launcher foundation is in place. Profile management is available now." Foreground="#D7EAFA" TextWrapping="Wrap"/>
        <Button Content="MANAGE PROFILES" Width="170" HorizontalAlignment="Left" Margin="0,18,0,0" Padding="14,9" Click="Profiles_Click"/>
       </StackPanel>
      </Border>
-     <TextBlock Text="QUICK ACCESS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NourMuted}" Margin="0,0,0,14"/>
+     <TextBlock Text="QUICK ACCESS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SkyMuted}" Margin="0,0,0,14"/>
      <UniformGrid Columns="2">
-      <Border Background="{StaticResource NourSurface}" CornerRadius="10" Padding="20" Margin="0,0,10,0">
-       <StackPanel><TextBlock Text="▦  VERSION LIBRARY" FontWeight="Bold"/><TextBlock Text="Browse official releases and snapshots." Foreground="{StaticResource NourMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
+      <Border Background="{StaticResource SkySurface}" CornerRadius="10" Padding="20" Margin="0,0,10,0">
+       <StackPanel><TextBlock Text="▦  VERSION LIBRARY" FontWeight="Bold"/><TextBlock Text="Browse official releases and snapshots." Foreground="{StaticResource SkyMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
       </Border>
-      <Border Background="{StaticResource NourSurface}" CornerRadius="10" Padding="20" Margin="10,0,0,0">
-       <StackPanel><TextBlock Text="◇  MOD MANAGER" FontWeight="Bold"/><TextBlock Text="Your mods, loaders and modpacks." Foreground="{StaticResource NourMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
+      <Border Background="{StaticResource SkySurface}" CornerRadius="10" Padding="20" Margin="10,0,0,0">
+       <StackPanel><TextBlock Text="◇  MOD MANAGER" FontWeight="Bold"/><TextBlock Text="Your mods, loaders and modpacks." Foreground="{StaticResource SkyMuted}" Margin="0,8,0,0" TextWrapping="Wrap"/></StackPanel>
       </Border>
      </UniformGrid>
     </StackPanel>
     <StackPanel x:Name="ProfilesPanel" Visibility="Collapsed">
-     <TextBlock Text="ACCOUNT MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#9BB68D" Margin="0,8,0,12"/>
+     <TextBlock Text="ACCOUNT MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
      <TextBlock Text="Profiles" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
-     <TextBlock Text="Manage local launcher identities on this PC." Foreground="{StaticResource NourMuted}" FontSize="15" Margin="0,0,0,24"/>
-     <Border Background="{StaticResource NourSurface}" CornerRadius="12" Padding="22" Margin="0,0,0,18">
+     <TextBlock Text="Manage local launcher identities on this PC." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24"/>
+     <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="22" Margin="0,0,0,18">
       <StackPanel>
-       <TextBlock Text="ADD OFFLINE PROFILE" FontSize="12" FontWeight="Bold" Foreground="#AFC69F" Margin="0,0,0,12"/>
-       <TextBlock Text="Minecraft username" Foreground="{StaticResource NourMuted}" Margin="0,0,0,6"/>
+       <TextBlock Text="ADD OFFLINE PROFILE" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,0,0,12"/>
+       <TextBlock Text="Minecraft username" Foreground="{StaticResource SkyMuted}" Margin="0,0,0,6"/>
        <DockPanel LastChildFill="False">
-        <TextBox x:Name="UsernameInput" Width="260" Height="38" Padding="10,8" FontSize="14" Background="#171B18" Foreground="#F0F1E9" BorderBrush="#465447" VerticalContentAlignment="Center" MaxLength="16" ToolTip="3–16 letters, numbers or underscores"/>
-        <Button Content="ADD PROFILE" Margin="12,0,0,0" Padding="18,8" Background="#6F995B" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="AddProfile_Click"/>
+        <TextBox x:Name="UsernameInput" Width="260" Height="38" Padding="10,8" FontSize="14" Background="#111C28" Foreground="#F0F1E9" BorderBrush="#3C5B76" VerticalContentAlignment="Center" MaxLength="16" ToolTip="3–16 letters, numbers or underscores"/>
+        <Button Content="ADD PROFILE" Margin="12,0,0,0" Padding="18,8" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="AddProfile_Click"/>
        </DockPanel>
        <TextBlock x:Name="ProfileMessage" Foreground="#D9B879" Margin="0,10,0,0" TextWrapping="Wrap"/>
       </StackPanel>
      </Border>
-     <TextBlock Text="SAVED PROFILES" FontSize="12" FontWeight="Bold" Foreground="{StaticResource NourMuted}" Margin="0,0,0,12"/>
+     <TextBlock Text="SAVED PROFILES" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SkyMuted}" Margin="0,0,0,12"/>
      <ItemsControl x:Name="ProfilesList">
       <ItemsControl.ItemTemplate>
        <DataTemplate>
-        <Border Background="#232A24" BorderBrush="#3B493C" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,10">
+        <Border Background="#1F2D3B" BorderBrush="#36516A" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,10">
          <Grid>
           <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <StackPanel VerticalAlignment="Center">
            <TextBlock Text="{Binding Username}" FontSize="17" FontWeight="Bold"/>
-           <TextBlock Text="{Binding StatusLabel}" Foreground="#AAB3A7" FontSize="12" Margin="0,4,0,0"/>
+           <TextBlock Text="{Binding StatusLabel}" Foreground="#A8B8C8" FontSize="12" Margin="0,4,0,0"/>
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
            <Button Content="USE PROFILE" Padding="12,7" Margin="0,0,8,0" Click="SelectProfile_Click" Tag="{Binding Id}"/>
@@ -82,34 +82,34 @@
        </DataTemplate>
       </ItemsControl.ItemTemplate>
      </ItemsControl>
-     <Border Background="#2B342D" CornerRadius="10" Padding="16" Margin="0,10,0,0">
-      <TextBlock Text="Local profiles are stored on this computer. They are not Microsoft accounts and do not verify Minecraft ownership. Server access depends on each server's authentication requirements." Foreground="#D0D8CF" TextWrapping="Wrap" FontSize="12"/>
+     <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,10,0,0">
+      <TextBlock Text="Local profiles are stored on this computer. They are not Microsoft accounts and do not verify Minecraft ownership. Server access depends on each server's authentication requirements." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
     <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
-     <TextBlock Text="RUNTIME MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#9BB68D" Margin="0,8,0,12"/>
+     <TextBlock Text="RUNTIME MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
      <TextBlock Text="Java runtimes" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
-     <TextBlock Text="Nour can keep Java versions separate from the Java installed on Windows." Foreground="{StaticResource NourMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
-     <Border Background="{StaticResource NourSurface}" CornerRadius="12" Padding="22">
+     <TextBlock Text="Nour can keep Java versions separate from the Java installed on Windows." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
+     <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="22">
       <StackPanel>
        <DockPanel>
         <StackPanel>
          <TextBlock Text="ECLIPSE TEMURIN 25" FontSize="16" FontWeight="Bold"/>
-         <TextBlock x:Name="Java25Status" Text="Not installed" Foreground="{StaticResource NourMuted}" Margin="0,5,0,0"/>
+         <TextBlock x:Name="Java25Status" Text="Not installed" Foreground="{StaticResource SkyMuted}" Margin="0,5,0,0"/>
         </StackPanel>
-        <Button x:Name="InstallJava25Button" Content="INSTALL JAVA 25" DockPanel.Dock="Right" Padding="16,9" Background="#6F995B" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallJava25_Click"/>
+        <Button x:Name="InstallJava25Button" Content="INSTALL JAVA 25" DockPanel.Dock="Right" Padding="16,9" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallJava25_Click"/>
        </DockPanel>
        <ProgressBar x:Name="Java25Progress" Height="7" Margin="0,18,0,8" Minimum="0" Maximum="100" Visibility="Collapsed"/>
-       <TextBlock x:Name="Java25Message" Foreground="{StaticResource NourMuted}" TextWrapping="Wrap"/>
+       <TextBlock x:Name="Java25Message" Foreground="{StaticResource SkyMuted}" TextWrapping="Wrap"/>
       </StackPanel>
      </Border>
-     <Border Background="#2B342D" CornerRadius="10" Padding="16" Margin="0,18,0,0">
-      <TextBlock Text="Java 25 is an optional managed runtime. Minecraft versions have different Java requirements; Nour must select a compatible runtime for each version. Installing Java 25 does not force older Minecraft versions to use it." Foreground="#D0D8CF" TextWrapping="Wrap" FontSize="12"/>
+     <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,18,0,0">
+      <TextBlock Text="Java 25 is an optional managed runtime. Minecraft versions have different Java requirements; Nour must select a compatible runtime for each version. Installing Java 25 does not force older Minecraft versions to use it." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
     <StackPanel x:Name="PlaceholderPanel" Visibility="Collapsed">
      <TextBlock x:Name="PlaceholderTitle" Text="Coming soon" FontSize="34" FontWeight="Bold" Margin="0,8,0,8"/>
-     <TextBlock Text="This section is planned for a future Nour Launcher milestone." Foreground="{StaticResource NourMuted}" FontSize="15"/>
+     <TextBlock Text="This section is planned for a future Sky Client milestone." Foreground="{StaticResource SkyMuted}" FontSize="15"/>
     </StackPanel>
    </Grid>
   </ScrollViewer>
