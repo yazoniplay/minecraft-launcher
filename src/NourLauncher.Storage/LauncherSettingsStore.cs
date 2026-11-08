@@ -5,7 +5,8 @@ namespace NourLauncher.Storage;
 /// <summary>Persisted launcher preferences.</summary>
 public sealed record LauncherSettings(
     bool AllowOfflineMode = false,
-    bool OfflineModeNoticeAccepted = false);
+    bool OfflineModeNoticeAccepted = false,
+    string MicrosoftClientId = "");
 
 /// <summary>
 /// Stores narrowly scoped, non-secret launcher preferences as JSON next to the profiles.
