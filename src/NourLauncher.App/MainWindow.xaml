@@ -156,23 +156,16 @@
     </StackPanel>
     <StackPanel x:Name="SettingsPanel" Visibility="Collapsed">
      <TextBlock Text="RUNTIME MANAGEMENT" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,8,0,12"/>
-     <TextBlock Text="Java runtimes" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
-     <TextBlock Text="Sky Client can keep Java versions separate from the Java installed on Windows." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
+     <TextBlock Text="Managed Java" FontSize="34" FontWeight="Bold" Margin="0,0,0,8"/>
+     <TextBlock Text="Sky Client downloads isolated Eclipse Temurin runtimes automatically, based on each Minecraft version's official metadata." Foreground="{StaticResource SkyMuted}" FontSize="15" Margin="0,0,0,24" TextWrapping="Wrap"/>
      <Border Background="{StaticResource SkySurface}" CornerRadius="12" Padding="22">
       <StackPanel>
-       <DockPanel>
-        <StackPanel>
-         <TextBlock Text="ECLIPSE TEMURIN 25" FontSize="16" FontWeight="Bold"/>
-         <TextBlock x:Name="Java25Status" Text="Not installed" Foreground="{StaticResource SkyMuted}" Margin="0,5,0,0"/>
-        </StackPanel>
-        <Button x:Name="InstallJava25Button" Content="INSTALL JAVA 25" DockPanel.Dock="Right" Padding="16,9" Background="#3D8EDB" Foreground="White" BorderThickness="0" FontWeight="Bold" Click="InstallJava25_Click"/>
-       </DockPanel>
-       <ProgressBar x:Name="Java25Progress" Height="7" Margin="0,18,0,8" Minimum="0" Maximum="100" Visibility="Collapsed"/>
-       <TextBlock x:Name="Java25Message" Foreground="{StaticResource SkyMuted}" TextWrapping="Wrap"/>
+       <TextBlock Text="INSTALLED RUNTIMES" FontSize="12" FontWeight="Bold" Foreground="#8BC4FF" Margin="0,0,0,12"/>
+       <TextBlock x:Name="ManagedJavaStatus" Text="Checking managed runtimes…" Foreground="{StaticResource SkyText}" TextWrapping="Wrap"/>
       </StackPanel>
      </Border>
      <Border Background="#24384A" CornerRadius="10" Padding="16" Margin="0,18,0,0">
-      <TextBlock Text="Java 25 is an optional managed runtime. Minecraft versions have different Java requirements; Nour must select a compatible runtime for each version. Installing Java 25 does not force older Minecraft versions to use it." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
+      <TextBlock Text="Runtime selection is version-specific: older Minecraft releases may need Java 8 or 16, while modern releases declare their required Java major in Mojang metadata. Sky Client does not use or modify your system Java installation." Foreground="#D7E5F2" TextWrapping="Wrap" FontSize="12"/>
      </Border>
     </StackPanel>
     <StackPanel x:Name="PlaceholderPanel" Visibility="Collapsed">
