@@ -366,6 +366,85 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void SaveMicrosoftClientId_Click(object sender, RoutedEventArgs e)
+    {
+        _settings = _settings with { MicrosoftClientId = MicrosoftClientIdInput.Text.Trim() };
+        try
+        {
+            await _settingsStore.SaveAsync(_settings);
+            AuthenticationMessage.Text = "Microsoft app ID saved. It is a public identifier, not a secret.";
+        }
+        catch (Exception ex) { AuthenticationMessage.Text = "Could not save app ID: " + ex.Message; }
+    }
+
+    private async void SignInMicrosoft_Click(object sender, RoutedEventArgs e)
+    {
+        var clientId = _settings.MicrosoftClientId.Trim();
+        if (clientId.Length == 0)
+        {
+            AuthenticationMessage.Text = "Add the Microsoft public-client application ID under Settings first.";
+            return;
+        }
+        try
+        {
+            AuthenticationMessage.Text = "Requesting Microsoft device sign-in…";
+            var device = await _microsoftAuth.BeginSignInAsync(clientId);
+            var choice = MessageBox.Show(this,
+                device.Message + Environment.NewLine + Environment.NewLine +
+                "Complete sign-in in your browser, then select OK here.",
+                "Microsoft account sign-in", MessageBoxButton.OKCancel, MessageBoxImage.Information);
+            if (choice != MessageBoxResult.OK)
+            {
+                AuthenticationMessage.Text = "Microsoft sign-in cancelled.";
+                return;
+            }
+            var progress = new Progress<string>(message => AuthenticationMessage.Text = message);
+            var session = await _microsoftAuth.CompleteSignInAsync(clientId, device, progress);
+            await AddAuthenticatedProfileAsync(session, LauncherAccountType.Microsoft);
+            AuthenticationMessage.Text = $"Signed in to Minecraft Java Edition as {session.Username}.";
+        }
+        catch (Exception ex) { AuthenticationMessage.Text = "Microsoft sign-in failed: " + ex.Message; }
+        RefreshLaunchState();
+    }
+
+    private async void SignInElyBy_Click(object sender, RoutedEventArgs e)
+    {
+        var username = ElyUsernameInput.Text.Trim();
+        var password = ElyPasswordInput.Password;
+        try
+        {
+            AuthenticationMessage.Text = "Signing in to Ely.by and verifying its account session…";
+            var session = await _elyByAuth.AuthenticateAsync(username, password);
+            await AddAuthenticatedProfileAsync(session, LauncherAccountType.ElyBy);
+            AuthenticationMessage.Text = $"Signed in to Ely.by as {session.Username}.";
+        }
+        catch (Exception ex) { AuthenticationMessage.Text = "Ely.by sign-in failed: " + ex.Message; }
+        finally { ElyPasswordInput.Clear(); }
+        RefreshLaunchState();
+    }
+
+    private async Task AddAuthenticatedProfileAsync(
+        MinecraftLaunchSession session, LauncherAccountType accountType)
+    {
+        var existing = _profiles.FirstOrDefault(p =>
+            string.Equals(p.Username, session.Username, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
+        {
+            existing = new ProfileListItem(Guid.NewGuid(), session.Username, DateTimeOffset.UtcNow,
+                _profiles.Count == 0, accountType);
+            _profiles.Add(existing);
+        }
+        else
+        {
+            existing.SetAccountType(accountType);
+            foreach (var profile in _profiles) profile.IsActive = profile.Id == existing.Id;
+        }
+        _authenticatedSessions[existing.Id] = session;
+        await PersistProfilesAsync();
+        RefreshProfileLabels();
+        RefreshLaunchState();
+    }
+
     private async void OfflineMode_Changed(object sender, RoutedEventArgs e)
     {
         if (_suppressSettingsEvents) return;
@@ -516,7 +595,7 @@ public partial class MainWindow : Window
         public Guid Id { get; }
         public string Username { get; }
         public DateTimeOffset CreatedAt { get; }
-        public LauncherAccountType AccountType { get; }
+        public LauncherAccountType AccountType { get; private set; }
         public bool IsActive
         {
             get => _isActive;
@@ -529,9 +608,20 @@ public partial class MainWindow : Window
             }
         }
 
-        public string AccountTypeLabel => AccountType == LauncherAccountType.Offline
-            ? "OFFLINE ACCOUNT"
-            : "MICROSOFT ACCOUNT";
+        public string AccountTypeLabel => AccountType switch
+        {
+            LauncherAccountType.Offline => "OFFLINE ACCOUNT",
+            LauncherAccountType.Microsoft => "MICROSOFT ACCOUNT",
+            LauncherAccountType.ElyBy => "ELY.BY ACCOUNT",
+            _ => "UNKNOWN ACCOUNT"
+        };
+
+        public void SetAccountType(LauncherAccountType accountType)
+        {
+            AccountType = accountType;
+            OnPropertyChanged(nameof(AccountTypeLabel));
+            OnPropertyChanged(nameof(StatusLabel));
+        }
 
         public string StatusLabel => IsActive ? "Selected · " + AccountTypeLabel : AccountTypeLabel;
         public event PropertyChangedEventHandler? PropertyChanged;
