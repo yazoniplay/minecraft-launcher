@@ -8,6 +8,7 @@ using NourLauncher.Core.Models;
 using NourLauncher.Storage;
 using NourLauncher.Runtimes;
 using NourLauncher.Minecraft.Installation;
+using NourLauncher.Minecraft.Launching;
 using NourLauncher.App.Games;
 
 namespace NourLauncher.App;
@@ -16,15 +17,20 @@ public partial class MainWindow : Window
 {
     private static readonly Regex ValidUsername = new("^[A-Za-z0-9_]{3,16}$", RegexOptions.Compiled);
     private readonly LauncherProfileStore _profileStore = new();
+    private readonly LauncherSettingsStore _settingsStore = new();
     private readonly JavaRuntimeManager _javaRuntimeManager = new();
     private readonly ObservableCollection<ProfileListItem> _profiles = new();
     private readonly ObservableCollection<VersionListItem> _visibleVersions = new();
     private readonly List<VersionListItem> _allVersions = new();
     private readonly MinecraftInstallationService _installationService = new();
+    private readonly MinecraftLaunchService _launchService = new();
     private readonly LuantiManager _luantiManager = new();
+    private LauncherSettings _settings = new();
     private bool _isInstallingLuanti;
     private bool _versionsLoaded;
     private bool _isInstallingVersion;
+    private bool _isLaunching;
+    private bool _suppressSettingsEvents;
 
     public MainWindow()
     {
@@ -33,9 +39,24 @@ public partial class MainWindow : Window
         VersionList.ItemsSource = _visibleVersions;
         Loaded += async (_, _) =>
         {
+            await LoadSettingsAsync();
             await RefreshProfilesAsync();
             RefreshManagedJavaStatus();
         };
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        try
+        {
+            _settings = await _settingsStore.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _settings = new LauncherSettings();
+            ProfileMessage.Text = $"Could not load launcher settings: {ex.Message}";
+        }
+        RefreshOfflineModeUi();
     }
 
     private async Task RefreshProfilesAsync()
@@ -45,7 +66,8 @@ public partial class MainWindow : Window
             var saved = await _profileStore.LoadAsync();
             _profiles.Clear();
             foreach (var profile in saved)
-                _profiles.Add(new ProfileListItem(profile.Id, profile.Username, profile.CreatedAt, profile.IsActive));
+                _profiles.Add(new ProfileListItem(
+                    profile.Id, profile.Username, profile.CreatedAt, profile.IsActive, profile.AccountType));
             if (_profiles.Count > 0 && !_profiles.Any(p => p.IsActive))
                 _profiles[0].IsActive = true;
             RefreshProfileLabels();
@@ -58,7 +80,7 @@ public partial class MainWindow : Window
     }
 
     private Task PersistProfilesAsync() => _profileStore.SaveAsync(_profiles.Select(p =>
-        new LauncherProfile(p.Id, p.Username, p.CreatedAt, p.IsActive)));
+        new LauncherProfile(p.Id, p.Username, p.CreatedAt, p.IsActive, p.AccountType)));
 
     private async void AddProfile_Click(object sender, RoutedEventArgs e)
     {
@@ -74,7 +96,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        var profile = new ProfileListItem(Guid.NewGuid(), username, DateTimeOffset.UtcNow, _profiles.Count == 0);
+        var profile = new ProfileListItem(
+            Guid.NewGuid(), username, DateTimeOffset.UtcNow, _profiles.Count == 0, LauncherAccountType.Offline);
         _profiles.Add(profile);
         UsernameInput.Clear();
         await SaveAndReportAsync($"Profile '{username}' added.");
@@ -218,11 +241,13 @@ public partial class MainWindow : Window
         {
             SelectedVersionLabel.Text = "Select a version above";
             InstallVersionButton.IsEnabled = false;
+            RefreshLaunchState();
             return;
         }
         SelectedVersionLabel.Text = selected.Id;
         InstallVersionButton.Content = selected.IsInstalled ? "REINSTALL VERSION" : "INSTALL VERSION";
         InstallVersionButton.IsEnabled = !_isInstallingVersion;
+        RefreshLaunchState();
     }
 
     private async void RefreshVersions_Click(object sender, RoutedEventArgs e)
@@ -260,7 +285,10 @@ public partial class MainWindow : Window
             ApplyVersionFilters();
             VersionList.SelectedItem = _visibleVersions.FirstOrDefault(v => v.Id == selected.Id);
             VersionInstallProgress.Value = 100;
-            VersionInstallMessage.Text = $"Minecraft {selected.Id} and Java {javaMajor} are ready. Launch integration is the next milestone.";
+            VersionInstallMessage.Text = $"Minecraft {selected.Id} and Java {javaMajor} are ready. " +
+                (_settings.AllowOfflineMode
+                    ? "Press PLAY OFFLINE to start."
+                    : "Enable offline mode under Settings to play it.");
         }
         catch (Exception ex)
         {
@@ -272,7 +300,136 @@ public partial class MainWindow : Window
             InstallVersionButton.IsEnabled = VersionList.SelectedItem is VersionListItem;
             if (VersionList.SelectedItem is VersionListItem current)
                 InstallVersionButton.Content = current.IsInstalled ? "REINSTALL VERSION" : "INSTALL VERSION";
+            RefreshLaunchState();
         }
+    }
+
+    /// <summary>
+    /// Enables PLAY OFFLINE only when the selected version is fully installed, the user has
+    /// opted in to offline mode, and no other launch/install is in flight.
+    /// </summary>
+    private void RefreshLaunchState()
+    {
+        if (PlayOfflineButton is null) return;
+        var selected = VersionList?.SelectedItem as VersionListItem;
+        PlayOfflineButton.IsEnabled = !_isLaunching && !_isInstallingVersion &&
+                                      selected?.IsInstalled == true && _settings.AllowOfflineMode;
+    }
+
+    private async void PlayOffline_Click(object sender, RoutedEventArgs e)
+    {
+        if (VersionList.SelectedItem is not VersionListItem selected || _isLaunching) return;
+        if (!selected.IsInstalled)
+        {
+            VersionInstallMessage.Text = $"Install Minecraft {selected.Id} first.";
+            return;
+        }
+        if (!_settings.AllowOfflineMode)
+        {
+            VersionInstallMessage.Text = "Offline mode is turned off. Enable it under Settings to launch without an account.";
+            return;
+        }
+
+        var profile = _profiles.FirstOrDefault(p => p.IsActive);
+        if (profile is null)
+        {
+            VersionInstallMessage.Text = "Add a profile on the Profiles page first; offline play needs a player name.";
+            return;
+        }
+
+        _isLaunching = true;
+        RefreshLaunchState();
+        VersionInstallProgress.Visibility = Visibility.Visible;
+        VersionInstallProgress.IsIndeterminate = true;
+        VersionInstallMessage.Text = $"Preparing Minecraft {selected.Id} for {profile.Username}…";
+
+        try
+        {
+            var javaMajor = await _installationService.GetJavaMajorVersionAsync(selected.Id);
+            VersionInstallMessage.Text = $"Checking private Java {javaMajor}…";
+            var javaExecutable = await _javaRuntimeManager.EnsureRuntimeAsync(javaMajor);
+            RefreshManagedJavaStatus();
+
+            var session = MinecraftLaunchSession.CreateOffline(profile.Username);
+            var process = _launchService.Launch(
+                new MinecraftLaunchRequest(selected.Id), session, javaExecutable);
+
+            VersionInstallMessage.Text =
+                $"Minecraft {selected.Id} started as {session.Username} (offline, PID {process.Id})." +
+                Environment.NewLine +
+                "Singleplayer and LAN worlds work; servers that require Mojang/Microsoft authentication will refuse the connection.";
+        }
+        catch (Exception ex)
+        {
+            VersionInstallMessage.Text = $"Offline launch failed: {ex.Message}";
+        }
+        finally
+        {
+            VersionInstallProgress.IsIndeterminate = false;
+            VersionInstallProgress.Visibility = Visibility.Collapsed;
+            _isLaunching = false;
+            RefreshLaunchState();
+        }
+    }
+
+    private async void OfflineMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_suppressSettingsEvents) return;
+        var enabled = OfflineModeCheckBox.IsChecked == true;
+
+        if (enabled && !_settings.OfflineModeNoticeAccepted)
+        {
+            var answer = MessageBox.Show(
+                this,
+                "Offline mode launches Minecraft with a locally generated player identity instead of a Microsoft account.\n\n" +
+                "It works for singleplayer worlds and LAN games. It does not provide skins, Realms, account sync, " +
+                "or access to servers that verify accounts.\n\n" +
+                "You are responsible for holding a legitimate Minecraft licence for any copy you play.\n\n" +
+                "Enable offline mode?",
+                "Enable offline mode",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                _suppressSettingsEvents = true;
+                OfflineModeCheckBox.IsChecked = false;
+                _suppressSettingsEvents = false;
+                return;
+            }
+
+            _settings = _settings with { OfflineModeNoticeAccepted = true };
+        }
+
+        _settings = _settings with { AllowOfflineMode = enabled };
+        try
+        {
+            await _settingsStore.SaveAsync(_settings);
+        }
+        catch (Exception ex)
+        {
+            OfflineModeStatus.Text = $"Could not save launcher settings: {ex.Message}";
+            return;
+        }
+        RefreshOfflineModeUi();
+    }
+
+    private void RefreshOfflineModeUi()
+    {
+        if (OfflineModeCheckBox is not null)
+        {
+            _suppressSettingsEvents = true;
+            OfflineModeCheckBox.IsChecked = _settings.AllowOfflineMode;
+            _suppressSettingsEvents = false;
+        }
+
+        if (OfflineModeStatus is not null)
+            OfflineModeStatus.Text = _settings.AllowOfflineMode
+                ? "Offline mode is ON. Installed versions can be launched with the selected profile's local identity — no account sign-in takes place."
+                : "Offline mode is OFF. Launching Minecraft requires a Microsoft session, which Sky Client does not support yet.";
+
+        RefreshLaunchState();
     }
 
     private void RefreshManagedJavaStatus()
@@ -323,17 +480,24 @@ public partial class MainWindow : Window
     {
         private bool _isActive;
 
-        public ProfileListItem(Guid id, string username, DateTimeOffset createdAt, bool isActive)
+        public ProfileListItem(
+            Guid id,
+            string username,
+            DateTimeOffset createdAt,
+            bool isActive,
+            LauncherAccountType accountType = LauncherAccountType.Offline)
         {
             Id = id;
             Username = username;
             CreatedAt = createdAt;
+            AccountType = accountType;
             _isActive = isActive;
         }
 
         public Guid Id { get; }
         public string Username { get; }
         public DateTimeOffset CreatedAt { get; }
+        public LauncherAccountType AccountType { get; }
         public bool IsActive
         {
             get => _isActive;
@@ -346,7 +510,11 @@ public partial class MainWindow : Window
             }
         }
 
-        public string StatusLabel => IsActive ? "Selected local profile" : "Local profile";
+        public string AccountTypeLabel => AccountType == LauncherAccountType.Offline
+            ? "OFFLINE ACCOUNT"
+            : "MICROSOFT ACCOUNT";
+
+        public string StatusLabel => IsActive ? "Selected · " + AccountTypeLabel : AccountTypeLabel;
         public event PropertyChangedEventHandler? PropertyChanged;
         public void RefreshStatus() => OnPropertyChanged(nameof(StatusLabel));
         private void OnPropertyChanged([CallerMemberName] string? name = null) =>
