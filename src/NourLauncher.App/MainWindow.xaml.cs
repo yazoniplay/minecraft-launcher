@@ -14,6 +14,7 @@ using NourLauncher.Minecraft.Launching;
 using NourLauncher.Minecraft.Mods;
 using NourLauncher.Minecraft.Instances;
 using NourLauncher.Minecraft.Diagnostics;
+using NourLauncher.Minecraft.Loaders;
 
 namespace NourLauncher.App;
 
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private readonly MinecraftLaunchService _launchService = new();
     private readonly ModrinthService _modrinthService = new();
     private readonly InstanceManager _instanceManager = new();
+    private readonly LoaderInstallerService _loaderInstaller = new();
     private readonly CrashDiagnosticsService _crashDiagnostics = new();
     private readonly MicrosoftMinecraftAuthService _microsoftAuth = new();
     private readonly Dictionary<Guid, MinecraftLaunchSession> _authenticatedSessions = new();
@@ -438,14 +440,56 @@ public partial class MainWindow : Window
         }
         var name = InstanceNameInput.Text.Trim();
         var loader = (InstanceLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "vanilla";
+        if (loader is "forge" or "neoforge")
+        {
+            InstanceMessage.Text = "Forge and NeoForge installers are not wired yet. Fabric and Quilt can be installed here.";
+            return;
+        }
         try
         {
+            InstanceMessage.Text = $"Creating {name}…";
             var instance = await _instanceManager.CreateAsync(name, version.Id, loader);
+            if (loader is "fabric" or "quilt")
+            {
+                var progress = new Progress<string>(message => InstanceMessage.Text = message);
+                var installed = await _loaderInstaller.InstallAsync(version.Id, loader, progress: progress);
+                await _instanceManager.SetLoaderProfileAsync(instance.Name, installed.ProfileId, installed.LoaderVersion);
+            }
             InstanceNameInput.Clear();
             InstanceMessage.Text = $"Created {instance.Name} for Minecraft {instance.MinecraftVersion} ({instance.Loader}).";
             RefreshInstances();
         }
         catch (Exception ex) { InstanceMessage.Text = "Could not create instance: " + ex.Message; }
+    }
+
+    private async void LaunchInstance_Click(object sender, RoutedEventArgs e)
+    {
+        if (InstancesList.SelectedItem is not InstanceListItem selected)
+        {
+            InstanceMessage.Text = "Select an instance first.";
+            return;
+        }
+        var profile = _profiles.FirstOrDefault(p => p.IsActive);
+        if (profile is null || profile.AccountType != LauncherAccountType.Microsoft ||
+            !_authenticatedSessions.TryGetValue(profile.Id, out var session))
+        {
+            InstanceMessage.Text = "Sign in with a Microsoft account that owns Minecraft Java Edition to launch modded instances.";
+            return;
+        }
+
+        try
+        {
+            InstanceMessage.Text = $"Preparing {selected.Name}…";
+            if (!_installationService.IsInstalled(selected.Instance.MinecraftVersion))
+                await _installationService.InstallAsync(selected.Instance.MinecraftVersion);
+            var launchVersion = selected.Instance.LoaderProfileId ?? selected.Instance.MinecraftVersion;
+            var javaMajor = await _installationService.GetJavaMajorVersionAsync(launchVersion);
+            var java = await _javaRuntimeManager.EnsureRuntimeAsync(javaMajor);
+            var process = _launchService.Launch(
+                new MinecraftLaunchRequest(launchVersion, selected.Name), session, java);
+            InstanceMessage.Text = $"Started {selected.Name} as {session.Username} (PID {process.Id}).";
+        }
+        catch (Exception ex) { InstanceMessage.Text = "Instance launch failed: " + ex.Message; }
     }
 
     private void RefreshInstances()
@@ -648,7 +692,9 @@ public partial class MainWindow : Window
         public MinecraftInstance Instance { get; }
         public string Name => Instance.Name;
         public string MinecraftVersion => Instance.MinecraftVersion;
-        public string Details => $"Minecraft {Instance.MinecraftVersion} · {Instance.Loader} · created {Instance.CreatedAt.ToLocalTime():yyyy-MM-dd}";
+        public string Details => $"Minecraft {Instance.MinecraftVersion} · {Instance.Loader}" +
+            (string.IsNullOrWhiteSpace(Instance.LoaderVersion) ? "" : $" {Instance.LoaderVersion}") +
+            $" · created {Instance.CreatedAt.ToLocalTime():yyyy-MM-dd}";
     }
 
     private sealed class ModSearchResultItem
