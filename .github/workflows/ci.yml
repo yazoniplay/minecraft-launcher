@@ -23,6 +23,37 @@ jobs:
         run: dotnet build NourLauncher.sln --configuration Release --no-restore
       - name: Publish lightweight framework-dependent Windows x64
         run: dotnet publish src/NourLauncher.App/NourLauncher.App.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output artifacts/win-x64
+      - name: Sign Windows executable
+        if: vars.WINDOWS_SIGNING_ENABLED == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PFX: ${{ secrets.WINDOWS_CERTIFICATE_PFX }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PFX) -or
+              [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PASSWORD)) {
+            throw 'Signing is enabled, but the certificate or certificate password secret is missing.'
+          }
+
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'sky-client-signing.pfx'
+          [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_PFX))
+
+          $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+          $signTool = Get-ChildItem $sdkBin -Filter signtool.exe -Recurse -ErrorAction Stop |
+            Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+
+          if (-not $signTool) {
+            throw 'Windows SDK SignTool was not found on this runner.'
+          }
+
+          & $signTool.FullName sign /fd SHA256 /td SHA256 /tr https://timestamp.digicert.com /f $certificatePath /p $env:WINDOWS_CERTIFICATE_PASSWORD 'artifacts/win-x64/SkyClient.exe'
+          if ($LASTEXITCODE -ne 0) { throw "Authenticode signing failed with exit code $LASTEXITCODE." }
+
+          & $signTool.FullName verify /pa /v 'artifacts/win-x64/SkyClient.exe'
+          if ($LASTEXITCODE -ne 0) { throw 'Authenticode signature verification failed.' }
+          Remove-Item $certificatePath -Force
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
