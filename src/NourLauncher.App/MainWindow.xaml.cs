@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using NourLauncher.Minecraft.Authentication;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -29,6 +30,9 @@ public partial class MainWindow : Window
     private readonly ModrinthService _modrinthService = new();
     private readonly InstanceManager _instanceManager = new();
     private readonly CrashDiagnosticsService _crashDiagnostics = new();
+    private readonly MicrosoftMinecraftAuthService _microsoftAuth = new();
+    private readonly ElyByAuthenticationService _elyByAuth = new();
+    private readonly Dictionary<Guid, MinecraftLaunchSession> _authenticatedSessions = new();
     private readonly ObservableCollection<InstanceListItem> _instances = new();
     private readonly ObservableCollection<ModSearchResultItem> _modSearchResults = new();
     private readonly ObservableCollection<InstalledModItem> _installedMods = new();
@@ -63,6 +67,7 @@ public partial class MainWindow : Window
         try
         {
             _settings = await _settingsStore.LoadAsync();
+            if (MicrosoftClientIdInput is not null) MicrosoftClientIdInput.Text = _settings.MicrosoftClientId;
         }
         catch (Exception ex)
         {
@@ -292,11 +297,16 @@ public partial class MainWindow : Window
     {
         if (PlayOfflineButton is null) return;
         var selected = VersionList?.SelectedItem as VersionListItem;
+        var profile = _profiles.FirstOrDefault(p => p.IsActive);
+        var profileCanLaunch = profile is not null &&
+            (profile.AccountType == LauncherAccountType.Offline
+                ? _settings.AllowOfflineMode
+                : _authenticatedSessions.ContainsKey(profile.Id));
         PlayOfflineButton.IsEnabled = !_isLaunching && !_isInstallingVersion &&
-                                      selected?.IsInstalled == true && _settings.AllowOfflineMode;
+                                      selected?.IsInstalled == true && profileCanLaunch;
     }
 
-    private async void PlayOffline_Click(object sender, RoutedEventArgs e)
+    private async void PlayMinecraft_Click(object sender, RoutedEventArgs e)
     {
         if (VersionList.SelectedItem is not VersionListItem selected || _isLaunching) return;
         if (!selected.IsInstalled)
@@ -304,16 +314,27 @@ public partial class MainWindow : Window
             VersionInstallMessage.Text = $"Install Minecraft {selected.Id} first.";
             return;
         }
-        if (!_settings.AllowOfflineMode)
-        {
-            VersionInstallMessage.Text = "Offline mode is turned off. Enable it under Settings to launch without an account.";
-            return;
-        }
 
         var profile = _profiles.FirstOrDefault(p => p.IsActive);
         if (profile is null)
         {
-            VersionInstallMessage.Text = "Add a profile on the Profiles page first; offline play needs a player name.";
+            VersionInstallMessage.Text = "Add a profile or sign in on the Profiles page first.";
+            return;
+        }
+
+        MinecraftLaunchSession session;
+        if (profile.AccountType == LauncherAccountType.Offline)
+        {
+            if (!_settings.AllowOfflineMode)
+            {
+                VersionInstallMessage.Text = "Offline mode is disabled. Enable it under Settings to use this local profile.";
+                return;
+            }
+            session = MinecraftLaunchSession.CreateOffline(profile.Username);
+        }
+        else if (!_authenticatedSessions.TryGetValue(profile.Id, out session!))
+        {
+            VersionInstallMessage.Text = $"Sign in to {profile.AccountTypeLabel} again on the Profiles page. Account sessions are not persisted yet.";
             return;
         }
 
@@ -329,19 +350,12 @@ public partial class MainWindow : Window
             VersionInstallMessage.Text = $"Checking private Java {javaMajor}…";
             var javaExecutable = await _javaRuntimeManager.EnsureRuntimeAsync(javaMajor);
             RefreshManagedJavaStatus();
-
-            var session = MinecraftLaunchSession.CreateOffline(profile.Username);
-            var process = _launchService.Launch(
-                new MinecraftLaunchRequest(selected.Id), session, javaExecutable);
-
-            VersionInstallMessage.Text =
-                $"Minecraft {selected.Id} started as {session.Username} (offline, PID {process.Id})." +
-                Environment.NewLine +
-                "Singleplayer and LAN worlds work; servers that require Mojang/Microsoft authentication will refuse the connection.";
+            var process = _launchService.Launch(new MinecraftLaunchRequest(selected.Id), session, javaExecutable);
+            VersionInstallMessage.Text = $"Minecraft {selected.Id} started as {session.Username} (PID {process.Id}).";
         }
         catch (Exception ex)
         {
-            VersionInstallMessage.Text = $"Offline launch failed: {ex.Message}";
+            VersionInstallMessage.Text = $"Minecraft launch failed: {ex.Message}";
         }
         finally
         {
@@ -350,150 +364,6 @@ public partial class MainWindow : Window
             _isLaunching = false;
             RefreshLaunchState();
         }
-    }
-
-    private async void CreateInstance_Click(object sender, RoutedEventArgs e)
-    {
-        if (InstanceVersionSelector.SelectedItem is not VersionListItem version)
-        {
-            InstanceMessage.Text = "Select a Minecraft version first.";
-            return;
-        }
-        var name = InstanceNameInput.Text.Trim();
-        var loader = (InstanceLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "vanilla";
-        try
-        {
-            var instance = await _instanceManager.CreateAsync(name, version.Id, loader);
-            InstanceNameInput.Clear();
-            InstanceMessage.Text = $"Created {instance.Name} for Minecraft {instance.MinecraftVersion} ({instance.Loader}).";
-            RefreshInstances();
-        }
-        catch (Exception ex) { InstanceMessage.Text = "Could not create instance: " + ex.Message; }
-    }
-
-    private void RefreshInstances()
-    {
-        _instances.Clear();
-        foreach (var instance in _instanceManager.GetInstances())
-            _instances.Add(new InstanceListItem(instance));
-    }
-
-    private void DeleteInstance_Click(object sender, RoutedEventArgs e)
-    {
-        if (InstancesList.SelectedItem is not InstanceListItem selected) return;
-        var answer = MessageBox.Show(this, $"Delete instance '{selected.Name}' and all of its saves, mods and settings?",
-            "Delete instance", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
-        if (answer != MessageBoxResult.Yes) return;
-        try
-        {
-            _instanceManager.Delete(selected.Name);
-            InstanceMessage.Text = $"Deleted instance '{selected.Name}'.";
-            RefreshInstances();
-            RefreshInstalledMods();
-        }
-        catch (Exception ex) { InstanceMessage.Text = "Could not delete instance: " + ex.Message; }
-    }
-
-    private async void SearchMods_Click(object sender, RoutedEventArgs e)
-    {
-        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance)
-        {
-            ModManagerMessage.Text = "Create or select an instance first.";
-            return;
-        }
-        var query = ModSearchInput.Text.Trim();
-        if (query.Length == 0) { ModManagerMessage.Text = "Enter a mod name to search."; return; }
-        var loader = (ModLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "fabric";
-        try
-        {
-            ModManagerMessage.Text = $"Searching Modrinth for {query} ({instance.MinecraftVersion}, {loader})…";
-            _modSearchResults.Clear();
-            var results = await _modrinthService.SearchModsAsync(query, instance.MinecraftVersion, loader);
-            foreach (var result in results) _modSearchResults.Add(new ModSearchResultItem(result));
-            ModManagerMessage.Text = $"Found {_modSearchResults.Count} compatible Modrinth projects.";
-        }
-        catch (Exception ex) { ModManagerMessage.Text = "Mod search failed: " + ex.Message; }
-    }
-
-    private async void InstallMod_Click(object sender, RoutedEventArgs e)
-    {
-        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance ||
-            ModSearchResults.SelectedItem is not ModSearchResultItem selected)
-        {
-            ModManagerMessage.Text = "Select an instance and a mod from the search results.";
-            return;
-        }
-        var loader = (ModLoaderSelector.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "fabric";
-        try
-        {
-            ModManagerMessage.Text = $"Finding a compatible {selected.Title} release…";
-            var versions = await _modrinthService.GetCompatibleVersionsAsync(selected.Project.Id, instance.MinecraftVersion, loader);
-            var chosen = versions.FirstOrDefault(v => v.VersionType == "release") ?? versions.FirstOrDefault();
-            if (chosen is null) { ModManagerMessage.Text = "No compatible release was found for this version and loader."; return; }
-            var progress = new Progress<double>(value => ModManagerMessage.Text = $"Downloading {selected.Title}: {value:P0}");
-            var installedPath = await _modrinthService.InstallVersionAsync(chosen, instance.Name, progress);
-            ModManagerMessage.Text = $"Installed {Path.GetFileName(installedPath)} into {instance.Name}.";
-            RefreshInstalledMods();
-        }
-        catch (Exception ex) { ModManagerMessage.Text = "Mod installation failed: " + ex.Message; }
-    }
-
-    private void ModInstanceSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshInstalledMods();
-
-    private void RefreshInstalledMods()
-    {
-        _installedMods.Clear();
-        if (ModInstanceSelector?.SelectedItem is not InstanceListItem instance) return;
-        foreach (var path in _modrinthService.GetInstalledMods(instance.Name))
-            _installedMods.Add(new InstalledModItem(Path.GetFileName(path)));
-    }
-
-    private void ToggleMod_Click(object sender, RoutedEventArgs e)
-    {
-        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance ||
-            InstalledModsList.SelectedItem is not InstalledModItem mod) return;
-        try
-        {
-            _modrinthService.SetModEnabled(instance.Name, mod.FileName, !mod.IsEnabled);
-            RefreshInstalledMods();
-            ModManagerMessage.Text = $"{mod.FileName} {(mod.IsEnabled ? "disabled" : "enabled")}.";
-        }
-        catch (Exception ex) { ModManagerMessage.Text = "Could not change mod state: " + ex.Message; }
-    }
-
-    private void RemoveMod_Click(object sender, RoutedEventArgs e)
-    {
-        if (ModInstanceSelector.SelectedItem is not InstanceListItem instance ||
-            InstalledModsList.SelectedItem is not InstalledModItem mod) return;
-        try
-        {
-            _modrinthService.RemoveMod(instance.Name, mod.FileName);
-            RefreshInstalledMods();
-            ModManagerMessage.Text = $"Removed {mod.FileName}.";
-        }
-        catch (Exception ex) { ModManagerMessage.Text = "Could not remove mod: " + ex.Message; }
-    }
-
-    private void ScanDiagnostics_Click(object sender, RoutedEventArgs e) => ScanDiagnostics();
-
-    private void ScanDiagnostics()
-    {
-        try
-        {
-            _crashReports.Clear();
-            foreach (var report in _crashDiagnostics.GetRecentReports()) _crashReports.Add(report);
-            DiagnosticsMessage.Text = _crashReports.Count == 0
-                ? "No Minecraft logs or crash reports were found in managed instances."
-                : $"Found {_crashReports.Count} recent log and crash files. Select one to inspect it.";
-        }
-        catch (Exception ex) { DiagnosticsMessage.Text = "Diagnostic scan failed: " + ex.Message; }
-    }
-
-    private void CrashReportsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (CrashReportsList.SelectedItem is not CrashReport report) return;
-        try { CrashDiagnosticText.Text = _crashDiagnostics.BuildDiagnosticReport(report.FilePath); }
-        catch (Exception ex) { CrashDiagnosticText.Text = "Could not read this report: " + ex.Message; }
     }
 
     private async void OfflineMode_Changed(object sender, RoutedEventArgs e)
@@ -551,7 +421,7 @@ public partial class MainWindow : Window
         if (OfflineModeStatus is not null)
             OfflineModeStatus.Text = _settings.AllowOfflineMode
                 ? "Offline mode is ON. Installed versions can be launched with the selected profile's local identity — no account sign-in takes place."
-                : "Offline mode is OFF. Launching Minecraft requires a Microsoft session, which Sky Client does not support yet.";
+                : "Offline mode is OFF. Choose a signed-in Microsoft or Ely.by profile to launch with online authentication.";
 
         RefreshLaunchState();
     }
