@@ -155,7 +155,10 @@ public sealed class ModrinthService
     {
         var directory = Path.Combine(GetInstanceDirectory(instanceName), "mods");
         return Directory.Exists(directory)
-            ? Directory.GetFiles(directory, "*.jar").OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).ToArray()
+            ? Directory.EnumerateFiles(directory)
+                .Where(path => path.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) ||
+                               path.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase).ToArray()
             : Array.Empty<string>();
     }
 
