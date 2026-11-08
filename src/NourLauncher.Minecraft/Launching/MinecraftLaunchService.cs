@@ -183,10 +183,9 @@ public sealed class MinecraftLaunchService
                     writer.WriteEndArray();
                     names.Add("libraries");
                 }
-                else if (current.TryGetProperty(property.Name, out _))
+                else if (current.TryGetProperty(property.Name, out var childProperty))
                 {
-                    if (property.NameEquals("libraries")) continue;
-                    property.Name.Equals("inheritsFrom", StringComparison.Ordinal);
+                    childProperty.WriteTo(writer);
                     names.Add(property.Name);
                 }
                 else
