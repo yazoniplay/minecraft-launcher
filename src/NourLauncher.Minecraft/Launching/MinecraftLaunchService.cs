@@ -101,8 +101,9 @@ public sealed class MinecraftLaunchService
 
         ValidateVersionId(request.VersionId);
         var metadata = LoadResolvedMetadata(request.VersionId);
-        var versionDirectory = Path.Combine(_root, "versions", request.VersionId);
-        var clientJar = Path.Combine(versionDirectory, request.VersionId + ".jar");
+        var baseVersionId = ResolveBaseVersionId(request.VersionId);
+        var versionDirectory = Path.Combine(_root, "versions", baseVersionId);
+        var clientJar = Path.Combine(versionDirectory, baseVersionId + ".jar");
         if (!File.Exists(clientJar))
             throw new FileNotFoundException($"Minecraft {request.VersionId} is not installed.", clientJar);
 
@@ -164,12 +165,13 @@ public sealed class MinecraftLaunchService
         session.Validate();
         ValidateVersionId(request.VersionId);
         var metadata = LoadResolvedMetadata(request.VersionId);
-        var clientJar = Path.Combine(_root, "versions", request.VersionId, request.VersionId + ".jar");
+        var baseVersionId = ResolveBaseVersionId(request.VersionId);
+        var clientJar = Path.Combine(_root, "versions", baseVersionId, baseVersionId + ".jar");
         if (!File.Exists(clientJar))
             throw new FileNotFoundException($"Minecraft {request.VersionId} is not installed.", clientJar);
 
         var gameDirectory = GetInstanceDirectory(request);
-        var nativesDirectory = Path.Combine(_root, "versions", request.VersionId, "natives");
+        var nativesDirectory = Path.Combine(_root, "versions", baseVersionId, "natives");
         var assetIndex = GetString(metadata, "assets") ?? request.VersionId;
         var classpath = BuildClasspath(metadata, clientJar);
         var variables = BuildVariables(request, session, gameDirectory,
@@ -262,10 +264,14 @@ public sealed class MinecraftLaunchService
             foreach (var library in libraries.EnumerateArray())
             {
                 if (!IsAllowed(library)) continue;
-                if (!library.TryGetProperty("downloads", out var downloads) ||
-                    !downloads.TryGetProperty("artifact", out var artifact) ||
-                    !artifact.TryGetProperty("path", out var pathElement)) continue;
-                var relative = pathElement.GetString();
+                string? relative = null;
+                if (library.TryGetProperty("downloads", out var downloads) &&
+                    downloads.TryGetProperty("artifact", out var artifact) &&
+                    artifact.TryGetProperty("path", out var pathElement))
+                    relative = pathElement.GetString();
+                if (string.IsNullOrWhiteSpace(relative) &&
+                    library.TryGetProperty("name", out var name) && name.GetString() is string coordinate)
+                    relative = MavenPath(coordinate);
                 if (string.IsNullOrWhiteSpace(relative)) continue;
                 var libraryPath = SafeCombine(Path.Combine(_root, "libraries"), relative);
                 if (File.Exists(libraryPath)) entries.Add(libraryPath);
@@ -435,6 +441,41 @@ public sealed class MinecraftLaunchService
         }
 
         return allowed;
+    }
+
+    private string ResolveBaseVersionId(string versionId, HashSet<string>? visited = null)
+    {
+        visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!visited.Add(versionId))
+            throw new InvalidDataException("Minecraft version inheritance contains a cycle.");
+        var path = Path.Combine(_root, "versions", versionId, versionId + ".json");
+        if (!File.Exists(path)) throw new FileNotFoundException("Version metadata is missing.", path);
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        if (document.RootElement.TryGetProperty("inheritsFrom", out var parent) &&
+            parent.GetString() is string parentId && !string.IsNullOrWhiteSpace(parentId))
+        {
+            ValidateVersionId(parentId);
+            return ResolveBaseVersionId(parentId, visited);
+        }
+        return versionId;
+    }
+
+    private static string MavenPath(string coordinate)
+    {
+        var parts = coordinate.Split(':');
+        if (parts.Length < 3) throw new InvalidDataException("Invalid Maven library coordinate: " + coordinate);
+        var group = parts[0].Replace('.', '/');
+        var artifact = parts[1];
+        var version = parts[2];
+        var classifier = parts.Length > 3 ? "-" + parts[3] : "";
+        var extension = "jar";
+        if (version.Contains('@'))
+        {
+            var split = version.Split('@', 2);
+            version = split[0];
+            extension = split[1];
+        }
+        return $"{group}/{artifact}/{version}/{artifact}-{version}{classifier}.{extension}";
     }
 
     private string GetInstanceDirectory(MinecraftLaunchRequest request)
