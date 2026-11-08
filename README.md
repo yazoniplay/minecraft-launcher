@@ -3,7 +3,7 @@
 A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 
 ## Goals
-- Browse official Minecraft releases, snapshots, old beta and alpha versions from Mojang metadata.\n- Install version metadata, client jars, Windows libraries, native archives, and assets with SHA-1 verification.
+- Browse official Minecraft releases, snapshots, old beta and alpha versions from Mojang metadata.\n- Install version metadata, client jars, Windows libraries, native archives, and assets with SHA-1 verification.\n- Read each version’s declared Java major and provision an isolated Eclipse Temurin runtime automatically (legacy fallback for older metadata).
 - Install and launch independent Minecraft instances.
 - Install and manage private Eclipse Temurin Java 25 alongside version-compatible runtimes; no system Java dependency.
 - Cache game files for eligible offline play after legitimate authentication.
@@ -25,7 +25,7 @@ A Windows-first Minecraft Java Edition launcher built with C#/.NET and WPF.
 - tests: automated tests.
 
 ## Development status
-Early alpha. The WPF shell includes persistent local profile management, a managed Eclipse Temurin Java 25 installer, and an official Minecraft version library. The version installer downloads Mojang metadata, the client jar, applicable Windows libraries and native archives, plus indexed assets, verifying SHA-1 hashes where provided. Microsoft authentication, version-aware Java selection, game launching, mod loaders, and authenticated offline launch are still in progress.
+Early alpha. The WPF shell includes persistent local profile management, automatic, version-specific Eclipse Temurin runtime management, and an official Minecraft version library. The version installer downloads Mojang metadata, the client jar, applicable Windows libraries and native archives, plus indexed assets, verifying SHA-1 hashes where provided. Microsoft authentication, version-aware Java selection, game launching, mod loaders, and authenticated offline launch are still in progress.
 
 ## Account and offline behavior
 Sky Client does not bypass Minecraft account ownership or Microsoft authentication. It may support cached offline play when the user has previously authenticated and the account/session remains eligible. Local profiles are stored on this PC and currently identify a launcher UI profile only. They are not Microsoft accounts and cannot be used to bypass Minecraft ownership or server authentication. Authenticated offline play remains a separate feature.
