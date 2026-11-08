@@ -367,30 +367,65 @@ public sealed class MinecraftLaunchService
     private static bool IsAllowed(JsonElement item)
     {
         if (!item.TryGetProperty("rules", out var rules)) return true;
+
+        // Mojang's rule list is ordered: the last matching rule wins. Feature flags
+        // describe launcher capabilities / launch context, not the current OS.
+        var features = new Dictionary<string, bool>(StringComparer.Ordinal)
+        {
+            ["has_custom_resolution"] = true,
+            ["is_demo_user"] = false,
+            ["has_quick_plays_support"] = false,
+            ["is_quick_play_singleplayer"] = false,
+            ["is_quick_play_multiplayer"] = false,
+            ["is_quick_play_realms"] = false
+        };
+
         var allowed = false;
         foreach (var rule in rules.EnumerateArray())
         {
             var matches = true;
-            if (rule.TryGetProperty("features", out var features))
+
+            if (rule.TryGetProperty("features", out var requiredFeatures))
             {
-                foreach (var feature in features.EnumerateObject())
+                foreach (var feature in requiredFeatures.EnumerateObject())
                 {
-                    if (feature.Name == "has_custom_resolution" && feature.Value.ValueKind == JsonValueKind.True) continue;
+                    var actual = features.TryGetValue(feature.Name, out var enabled) && enabled;
+                    var expected = feature.Value.ValueKind == JsonValueKind.True;
+                    if (actual != expected)
+                    {
+                        matches = false;
+                        break;
+                    }
+                }
+            }
+
+            if (matches && rule.TryGetProperty("os", out var os))
+            {
+                if (os.TryGetProperty("name", out var name) &&
+                    !string.Equals(name.GetString(), "windows", StringComparison.OrdinalIgnoreCase))
                     matches = false;
-                    break;
-                }
-            }
-            if (rule.TryGetProperty("os", out var os))
-            {
-                if (os.TryGetProperty("name", out var name) && name.GetString() != "windows") matches = false;
-                if (os.TryGetProperty("arch", out var arch) && arch.GetString() is string value)
+
+                if (matches && os.TryGetProperty("arch", out var arch) && arch.GetString() is string architecture)
                 {
-                    if (value is "x86_64" or "amd64" && !Environment.Is64BitOperatingSystem) matches = false;
-                    if (value == "x86" && Environment.Is64BitOperatingSystem) matches = false;
+                    var processArchitecture = Environment.Is64BitOperatingSystem ? "x86_64" : "x86";
+                    if (architecture is "amd64" or "x86_64") architecture = "x86_64";
+                    if (!string.Equals(architecture, processArchitecture, StringComparison.OrdinalIgnoreCase))
+                        matches = false;
+                }
+
+                if (matches && os.TryGetProperty("version", out var version) && version.GetString() is string pattern)
+                {
+                    var windowsVersion = Environment.OSVersion.Version.ToString();
+                    if (!Regex.IsMatch(windowsVersion, pattern, RegexOptions.CultureInvariant))
+                        matches = false;
                 }
             }
-            if (matches) allowed = rule.TryGetProperty("action", out var action) && action.GetString() == "allow";
+
+            if (matches)
+                allowed = rule.TryGetProperty("action", out var action) &&
+                          string.Equals(action.GetString(), "allow", StringComparison.Ordinal);
         }
+
         return allowed;
     }
 
