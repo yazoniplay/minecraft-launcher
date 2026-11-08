@@ -12,7 +12,7 @@ public sealed class LauncherProfileStore
     {
         var root = rootDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "NourLauncher");
+            "SkyClient");
         Directory.CreateDirectory(root);
         _filePath = Path.Combine(root, "profiles.json");
     }
